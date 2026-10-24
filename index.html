@@ -104,6 +104,28 @@ nav svg{width:24px;height:24px}
 .gen .hd b{font-size:15px}
 .gen .links{display:flex;gap:14px;flex-wrap:wrap;margin:6px 0 10px;font-size:14px}
 .item.click{cursor:pointer}
+.chips.wrap{flex-wrap:wrap;overflow:visible}
+.chip.on{background:var(--bad-bg);border-color:var(--bad);color:var(--bad)}
+.anom{display:inline-block;background:var(--bad-bg);color:var(--bad);border-radius:6px;padding:1px 6px;font-size:11px;font-weight:700;margin-left:4px}
+.mt{border-collapse:collapse;font-size:13px;min-width:640px;width:100%}
+.mt th{font-size:11px;color:var(--muted);font-weight:700;text-align:center;padding:6px 3px;border-bottom:1.5px solid var(--line);white-space:nowrap}
+.mt td{padding:4px 3px;border-bottom:1px solid var(--line);text-align:center;white-space:nowrap}
+.mt td.l{text-align:left}
+.mt td.l,.mt th:first-child{position:sticky;left:0;background:var(--card);z-index:1;box-shadow:1px 0 0 var(--line)}
+body.ancho main,body.ancho header .top,body.ancho .datebox,body.ancho .estado{max-width:1180px}
+.mt tr.dom td.l{color:var(--bad);font-weight:700}
+.mt tr.tot td{font-weight:700;border-top:2px solid var(--ink);border-bottom:0}
+.mt .mi{width:64px;padding:6px 4px;font-size:13px;text-align:center;border-radius:8px}
+.mt .mh{width:92px;padding:6px 4px;font-size:12px;border-radius:8px}
+.mt .mi.cambio,.mt .mh.cambio{border-color:var(--amber);background:var(--amber-bg)}
+.tog{border:1.5px solid var(--line);background:var(--card);color:var(--muted);border-radius:7px;padding:4px 6px;font:700 11px/1 inherit;cursor:pointer;min-width:26px}
+.tog.on{background:var(--brand);border-color:var(--brand);color:var(--brand-ink)}
+.tog.fer.on{background:var(--bad);border-color:var(--bad);color:#fff}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -4px;padding:0 4px}
+.dest{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line);font-size:14px;cursor:pointer;color:var(--ink);font-weight:500;margin:0}
+.dest input{width:auto}
+details summary{cursor:pointer;font-weight:600;font-size:14px;color:var(--brand);margin:12px 0 8px}
+textarea{resize:vertical}
 .estado{display:flex;align-items:center;gap:8px;max-width:760px;margin:8px auto 0;border:0;width:100%;border-radius:10px;padding:8px 10px;font:600 13px/1.25 inherit;text-align:left;cursor:pointer;background:rgba(255,255,255,.14);color:#fff}
 .estado .dot{width:9px;height:9px;border-radius:50%;flex:none;background:#5be08f}
 .estado.off{background:#f6c34a;color:#3a2a00}.estado.off .dot{background:#9a5b00}
@@ -161,6 +183,10 @@ nav svg{width:24px;height:24px}
       </div>
       <div class="hint" id="hintHum"></div>
       <div class="f">
+        <label>Anomalías <small style="font-weight:500">(tocar las que correspondan)</small></label>
+        <div class="chips wrap" id="anoms"></div>
+      </div>
+      <div class="f">
         <label for="obs">Observaciones (opcional)</label>
         <input id="obs" autocomplete="off">
       </div>
@@ -182,6 +208,10 @@ nav svg{width:24px;height:24px}
     <div class="card" style="margin-top:14px">
       <h2>Informe del día <small>FO0167 + FO0104 en un solo PDF</small></h2>
       <div id="infoInforme"></div>
+    </div>
+    <div class="card" id="cardNov">
+      <h2>Novedades del día <small id="lblNov"></small></h2>
+      <div id="novDia"></div>
     </div>
     <div class="card">
       <h2>Planilla FO0104 <small id="lblHojas"></small></h2>
@@ -223,6 +253,34 @@ nav svg{width:24px;height:24px}
   </section>
 
   <!-- HISTORIAL -->
+  <section class="view" id="v-mes">
+    <div class="card">
+      <h2>Resumen mensual <small>Recepción · Camiones OTS</small></h2>
+      <div class="row">
+        <div class="f"><label for="mesSel">Mes</label><input type="month" id="mesSel"></div>
+        <div class="f" style="align-self:end"><button class="btn ghost" id="btnMesVer">Ver mes</button></div>
+      </div>
+      <div id="mesInfo"></div>
+    </div>
+    <div class="card">
+      <h2>Días del mes <small>Cargill y horario se completan a mano</small></h2>
+      <div class="hint" style="margin:-4px 0 10px">R = recepción · D = despacho · F = feriado. Portátil, estufa y temperatura salen de los registros de camiones.</div>
+      <label class="dest" style="border:0;padding:0 0 8px"><input type="checkbox" id="mesDesp"> Mostrar columnas de despacho</label>
+      <div class="scroll" id="mesTabla"></div>
+      <details>
+        <summary>Pegar listado de humedad de Cargill</summary>
+        <div class="hint" style="margin-bottom:6px">Copie desde el Excel de Cargill dos columnas: fecha y humedad (una fila por día).</div>
+        <textarea id="cargillPaste" rows="6" placeholder="01/10/2026&#9;11,95&#10;02/10/2026&#9;12,10"></textarea>
+        <button class="btn ghost" id="btnPegar" style="margin-top:8px">Aplicar al mes</button>
+      </details>
+      <div style="margin-top:12px"><button class="btn" id="btnMesGuardar">Guardar cambios</button></div>
+    </div>
+    <div class="card">
+      <h2>Novedades del mes <small id="lblNovMes"></small></h2>
+      <div id="mesNov"></div>
+    </div>
+  </section>
+
   <section class="view" id="v-hist">
     <div class="card">
       <h2>Buscar registros</h2>
@@ -247,10 +305,25 @@ nav svg{width:24px;height:24px}
   <button data-v="cargar" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>Cargar</button>
   <button data-v="dia"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4M7 14h4"/></svg>Día</button>
   <button data-v="muestras"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3h6M10 3v6L4.5 18.5A2 2 0 0 0 6.2 21h11.6a2 2 0 0 0 1.7-2.5L14 9V3"/><path d="M7 15h10"/></svg>Muestras</button>
+  <button data-v="mes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Mes</button>
   <button data-v="hist"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>Historial</button>
 </div></nav>
 
 <div id="toast"></div>
+<div class="ov sheet" id="ovMail"><div class="card">
+  <h2 id="mailTitulo">Enviar por correo</h2>
+  <div class="hint" id="mailAsunto" style="margin:-6px 0 8px"></div>
+  <label>Destinatarios predeterminados</label>
+  <div id="mailDest"></div>
+  <div class="f" style="margin-top:12px">
+    <label for="mailOtros">Agregar otros correos (separados por coma)</label>
+    <input id="mailOtros" type="email" multiple autocomplete="email" placeholder="persona@empresa.com">
+  </div>
+  <label class="dest" style="border:0;padding:0 0 10px"><input type="checkbox" id="mailGuardar"> Guardar los nuevos como predeterminados</label>
+  <div class="f"><label for="mailNota">Mensaje (opcional)</label><textarea id="mailNota" rows="3"></textarea></div>
+  <button class="btn" id="mailEnviar">Enviar</button>
+  <div style="margin-top:10px"><button class="btn ghost" id="mailCerrar">Cancelar</button></div>
+</div></div>
 <div class="ov sheet" id="ovEdit"><div class="card">
   <h2 id="edTitulo">Editar registro</h2>
   <div id="edCampos"></div>
@@ -284,7 +357,7 @@ nav svg{width:24px;height:24px}
    API_URL: solo para la app instalable (GitHub Pages). Pegar la URL /exec
    de la implementación de Apps Script. Dentro de Apps Script se ignora.
    ===================================================================== */
-const API_URL = 'https://script.google.com/macros/s/AKfycbw_HG0V928PLk9SZDk4pZJjoEkGFH3RTWf-Cqo3Aoe11Wp_kI2N6RxHea9vnCp5mnzRtQ/exec';
+const API_URL = '';
 
 /* ================= modo de funcionamiento ================= */
 const $ = id => document.getElementById(id);
@@ -425,7 +498,7 @@ function diaVista(fecha){
   const ops = S.cola.filter(o => o.fecha === fecha);
   ops.forEach(op => {
     if(op.op==='lectura') d.lecturas.push({ id:op.id, fecha, hora:op.hora, patente:op.patente, chofer:op.chofer, viaje:0,
-      h:op.h, t:op.t, inspector:op.inspector, obs:op.obs||'', estado:'ACTIVO', pend:true, error:op.error, reg:op.creado });
+      h:op.h, t:op.t, inspector:op.inspector, obs:op.obs||'', estado:'ACTIVO', pend:true, error:op.error, reg:op.creado, anomalia:op.anomalia||'' });
     else if(op.op==='muestra') d.muestras.push({ id:op.id, fecha, n:999, patente:op.patente, ref:op.ref, h:op.h, gi:op.gi, gf:op.gf,
       tiempo:op.tiempo, inspector:op.inspector, estado:'ACTIVO', pend:true, error:op.error });
     else {
@@ -487,6 +560,17 @@ async function arrancar(){
 function fusionCamiones(srv, loc){
   const m = {}; (loc||[]).forEach(c=>m[c.p]=c); (srv||[]).forEach(c=>m[c.p]=c); return Object.values(m);
 }
+const ANOM_DEF = ['Punto negro','Insecto vivo','Olor extraño','Material extraño','Producto caliente','Apelmazado / grumos','Otro'];
+const anomLista = () => (S.cfg && S.cfg.anomalias) || ANOM_DEF;
+function chipsAnom(cont, sel){
+  const on = String(sel||'').split(';').map(x=>x.trim()).filter(Boolean);
+  $(cont).innerHTML = anomLista().map(a=>`<button type="button" class="chip ${on.includes(a)?'on':''}" data-a="${esc(a)}">${esc(a)}</button>`).join('');
+}
+const anomSel = cont => [...$(cont).querySelectorAll('.chip.on')].map(b=>b.dataset.a).join('; ');
+function validarAnom(anom, obs){
+  if(/(^|; )Otro($|;)/.test(anom) && !obs) throw new Error('Describa la anomalía "Otro" en Observaciones.');
+}
+const etiquetaNov = r => [r.h>S.cfg.base ? 'H° sobre base' : '', r.anomalia].filter(Boolean).join(' · ');
 function llenarCamiones(){
   $('dlCamiones').innerHTML = S.cfg.camiones.map(c=>`<option value="${esc(c.p)}">${esc(c.c)}</option>`).join('');
 }
@@ -504,6 +588,7 @@ function render(){
 function viajeDe(p){ return activas().filter(r=>r.patente===p).length + 1; }
 function resetForm(){
   ['patente','chofer','hum','tem','obs'].forEach(i=>$(i).value='');
+  chipsAnom('anoms', '');
   $('hora').value = ahoraHM(); $('lblViaje').textContent=''; $('hintHum').textContent=''; $('hintHum').className='hint';
 }
 function onPatente(){
@@ -530,21 +615,22 @@ function renderCargar(){
   $('ultimos').innerHTML = u.length ? u.map(r=>`
     <div class="item ${r.estado==='ANULADO'?'':'click'}" data-id="${r.estado==='ANULADO'?'':esc(r.id)}">
       <div class="n">${r.estado==='ANULADO'?'–':r.viaje}</div>
-      <div class="main"><b>${esc(r.patente)}</b>${icPend(r)} <small>${esc(r.chofer)} · ${esc(r.hora)}${r.estado==='ANULADO'?' · ANULADO':''}</small></div>
+      <div class="main"><b>${esc(r.patente)}</b>${icPend(r)}${r.anomalia?`<span class="anom">${esc(r.anomalia)}</span>`:''} <small>${esc(r.chofer)} · ${esc(r.hora)}${r.estado==='ANULADO'?' · ANULADO':''}</small></div>
       <span class="pill ${r.h>S.cfg.base?'bad':''}">${n1(r.h)} %</span>
       <span class="pill">${n1(r.t)} °C</span>
     </div>`).join('') : '<div class="empty">Sin registros.</div>';
 }
 function guardar(){
   const d = { op:'lectura', id:uid(), fecha:S.fecha, patente:pat($('patente').value), chofer:$('chofer').value.trim().toUpperCase(),
-    hora:$('hora').value, h:num($('hum').value), t:num($('tem').value), obs:$('obs').value.trim(), inspector:$('inspector').value };
-  validarLectura(d);
+    hora:$('hora').value, h:num($('hum').value), t:num($('tem').value), obs:$('obs').value.trim(), inspector:$('inspector').value,
+    anomalia:anomSel('anoms') };
+  validarLectura(d); validarAnom(d.anomalia, d.obs);
   const v = viajeDe(d.patente);
   const c = S.cfg.camiones.find(x=>x.p===d.patente);
   if(c){ if(d.chofer) c.c=d.chofer; } else { S.cfg.camiones.push({p:d.patente,c:d.chofer}); llenarCamiones(); }
   DB.set('cfg', S.cfg);
   encolar(d); resetForm();
-  toast(`Guardado · ${d.patente} viaje ${v}${d.h>S.cfg.base?' · SUPERA BASE':''}${S.online?'':' · sin conexión, queda pendiente'}`, d.h>S.cfg.base);
+  toast(`Guardado · ${d.patente} viaje ${v}${d.h>S.cfg.base?' · SUPERA BASE':''}${d.anomalia?' · '+d.anomalia:''}${S.online?'':' · sin conexión, queda pendiente'}`, d.h>S.cfg.base || !!d.anomalia);
   $('patente').focus();
 }
 function validarLectura(d){
@@ -571,6 +657,14 @@ function renderDia(){
     <div class="stat"><b>${n1(st.tMax)} / ${n1(st.tMin)}</b><span>Pico T° alto / bajo</span></div>
     <div class="stat ${mu<sug?'bad':''}"><b>${mu} / ${sug}</b><span>Muestras / sugeridas</span></div>`;
   $('infoInforme').innerHTML = bloqueInforme();
+  const nov = L.filter(r => r.h>S.cfg.base || r.anomalia);
+  $('lblNov').textContent = nov.length ? `· ${nov.length} camión(es)` : '';
+  $('novDia').innerHTML = nov.length ? nov.map(r=>`<div class="item click" data-id="${esc(r.id)}">
+      <div class="n" style="background:var(--bad-bg);color:var(--bad)">!</div>
+      <div class="main"><b>${esc(r.patente)}</b> <small>${esc(r.hora)} · ${esc(r.chofer)} · viaje ${r.viaje}${r.obs?' · '+esc(r.obs):''}</small>
+        <div class="trips"><span class="trip bad">${esc(etiquetaNov(r))}</span></div></div>
+      <span class="pill ${r.h>S.cfg.base?'bad':''}">${n1(r.h)} %</span></div>`).join('')
+    : `<div class="hint">Sin novedades: ningún camión con anomalías ni humedad sobre ${n1(S.cfg.base)} %.</div>`;
   $('lblHojas').textContent = `· ${filas.length} filas en ${hojas} hoja(s) de ${S.cfg.filasHoja}`;
   renderTabla(filas);
 }
@@ -584,7 +678,7 @@ function renderTabla(filas){
       <div class="n">${(i%base)+1}</div>
       <div class="main"><b>${esc(f.patente)}</b> ${f.cont?`<span class="pill amber" style="font-size:11px;padding:2px 8px">continuación ${f.desde}–${f.desde+f.viajes.length-1}</span>`:''}
         <small>${esc(f.chofer)}</small>
-        <div class="trips">${f.viajes.map((v,j)=>`<button class="trip ${v.h>S.cfg.base?'bad':''}" data-id="${esc(v.id)}" title="Tocar para editar">${f.desde+j}º ${esc(v.hora)} · ${n1(v.h)}% · ${n1(v.t)}°${v.pend?(v.error?' ⚠':' ⏱'):''}</button>`).join('')}</div>
+        <div class="trips">${f.viajes.map((v,j)=>`<button class="trip ${v.h>S.cfg.base?'bad':''}" data-id="${esc(v.id)}" title="Tocar para editar">${f.desde+j}º ${esc(v.hora)} · ${n1(v.h)}% · ${n1(v.t)}°${v.anomalia?' 🐞':''}${v.pend?(v.error?' ⚠':' ⏱'):''}</button>`).join('')}</div>
       </div></div>`;
   });
   const anul = S.dia.lecturas.filter(r=>r.estado==='ANULADO');
@@ -616,6 +710,7 @@ function bloqueInforme(){
     ${nMu<sug && L.length ? `<div class="hint bad">Faltan muestras: ${nMu} de ${sug} sugeridas.</div>` : ''}
     ${x&&x.planilla?`<div class="links">${x.pdf?`<a href="${esc(x.pdf)}" target="_blank">Abrir PDF</a>`:''}<a href="${esc(x.planilla)}" target="_blank">Planilla</a><a href="${esc(x.carpeta)}" target="_blank">Carpeta del mes</a></div>`:''}
     <button class="btn ${x&&!x.pendiente&&x.pdf?'ghost':''}" data-gen="1" ${bloqueo?'disabled':''}>${x?'Regenerar informe':'Generar informe'}</button>
+    ${x&&x.pdf&&!x.pendiente&&S.online ? `<button class="btn" data-mail="Diario" style="margin-top:8px">✉ Enviar por correo</button>` : ''}
     ${bloqueo?`<div class="hint ${!S.online||pend?'bad':''}">${bloqueo}</div>`:''}
   </div>`;
 }
@@ -650,6 +745,119 @@ async function generarInforme(){
   const d = await api('guardarPdf', S.fecha, lista);
   S.dias[S.fecha] = d; guardarDias(); render();
   toast(`${r.nombre}.pdf generado${aviso}`, !!aviso);
+  abrirMail('Diario', S.fecha, r.nombre);
+}
+
+/* ================= CORREO ================= */
+function abrirMail(tipo, clave, asunto){
+  S.mail = { tipo, clave };
+  const def = (S.cfg.correos && S.cfg.correos[tipo]) || [];
+  $('mailTitulo').textContent = tipo==='Mensual' ? 'Enviar resumen mensual' : 'Enviar informe del día';
+  $('mailAsunto').textContent = asunto || '';
+  $('mailDest').innerHTML = def.length ? def.map(c=>`<label class="dest"><input type="checkbox" value="${esc(c)}" checked> ${esc(c)}</label>`).join('')
+    : '<div class="hint">No hay correos predeterminados. Agregue uno abajo y marque "Guardar como predeterminado".</div>';
+  $('mailOtros').value=''; $('mailNota').value=''; $('mailGuardar').checked = !def.length;
+  $('ovMail').classList.add('on');
+}
+async function enviarMail(){
+  const m = S.mail; if(!m) return;
+  const otros = $('mailOtros').value.split(/[,;\s]+/).map(x=>x.trim()).filter(Boolean);
+  const para = [...$('mailDest').querySelectorAll('input:checked')].map(i=>i.value).concat(otros);
+  if(!para.length) throw new Error('Elija o escriba al menos un destinatario.');
+  const malo = otros.find(x=>!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(x)); if(malo) throw new Error('Correo inválido: '+malo);
+  const r = await api('enviarCorreo', { tipo:m.tipo, clave:m.clave, para, nota:$('mailNota').value.trim(), usuario:$('inspector').value, guardar:$('mailGuardar').checked && otros.length>0 });
+  S.cfg.correos = r.correos; DB.set('cfg', S.cfg);
+  $('ovMail').classList.remove('on');
+  toast(`Enviado a ${r.enviados} destinatario(s)`);
+}
+
+/* ================= RESUMEN MENSUAL ================= */
+S.mes = null; S.mesEd = {};
+const mesClave = () => $('mesSel').value || S.fecha.slice(0,7);
+async function cargarMes(){
+  try{ S.mes = await api('getMes', mesClave()); S.mesEd = {}; setOnline(true); renderMes(); }
+  catch(e){ if(e.red){ setOnline(false); $('mesInfo').innerHTML = '<div class="hint bad">El resumen mensual requiere conexión.</div>'; } else throw e; }
+}
+const valMes = (d,k) => (S.mesEd[d.fecha] && k in S.mesEd[d.fecha]) ? S.mesEd[d.fecha][k] : d[k];
+const nOv = v => v==='' || v==null ? '' : n2(+v);
+function setMes(f,k,v){
+  const d = S.mes.dias.find(x=>x.fecha===f);
+  (S.mesEd[f] = S.mesEd[f] || {})[k] = v;
+  if(String(d[k]) === String(v)) delete S.mesEd[f][k];
+  if(!Object.keys(S.mesEd[f]).length) delete S.mesEd[f];
+}
+function renderMes(){
+  const m = S.mes; if(!m) return;
+  const desp = $('mesDesp').checked, cambios = Object.keys(S.mesEd).length;
+  const prom = a => { a = a.filter(v=>v!=='' && v!=null && isFinite(v)).map(Number); return a.length ? a.reduce((x,y)=>x+y,0)/a.length : NaN; };
+  const act = m.dias.filter(d=>valMes(d,'recepcion'));
+  const P = prom(act.map(d=>d.portatil)), E = prom(act.map(d=>d.estufa)), T = prom(act.map(d=>d.temp)), C = prom(m.dias.map(d=>{ const c=valMes(d,'cargill'); return c===''?'':num(c); }));
+  const DP = prom(m.dias.map(d=>num(valMes(d,'despPort')))), DE = prom(m.dias.map(d=>num(valMes(d,'despEst'))));
+  const inp = (d,k,cls,ph) => { const v = valMes(d,k); const ch = S.mesEd[d.fecha] && k in S.mesEd[d.fecha];
+    return `<input class="${cls}${ch?' cambio':''}" data-f="${d.fecha}" data-k="${k}" value="${esc(cls==='mi'&&v!==''&&v!=null&&!ch?n2(+v):v)}" placeholder="${esc(ph||'')}" inputmode="${cls==='mi'?'decimal':'text'}">`; };
+  const tg = (d,k,t,c) => `<button class="tog ${c||''} ${valMes(d,k)?'on':''}" data-f="${d.fecha}" data-k="${k}">${t}</button>`;
+  const dif = (a,b) => (a===''||b===''||a==null||b==null||!isFinite(a)||!isFinite(b)) ? '' : n2(a-b);
+  $('mesTabla').innerHTML = `<table class="mt"><tr><th>Día</th><th>Op.</th><th>Horario</th><th>Cam.</th><th>Portátil %</th><th>Estufa %</th><th>Dif.</th><th>Temp °C</th><th>Cargill %</th><th>Dif.</th>${desp?'<th>Desp. portátil</th><th>Desp. estufa</th><th>Dif.</th>':''}</tr>
+    ${m.dias.map(d=>{ const c = valMes(d,'cargill'), cn = c===''?'':num(c), dp=num(valMes(d,'despPort')), de=num(valMes(d,'despEst'));
+      return `<tr class="${d.dow===0?'dom':''}">
+      <td class="l">${['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'][d.dow]} ${d.dia}</td>
+      <td>${tg(d,'recepcion','R')} ${tg(d,'despacho','D')} ${tg(d,'feriado','F','fer')}</td>
+      <td>${inp(d,'horario','mh', valMes(d,'feriado')&&!d.viajes?'Feriado':d.sugerido)}</td>
+      <td>${d.camiones||''}${d.alertas?` <span class="anom">${d.alertas}</span>`:''}</td>
+      <td>${nOv(d.portatil)}</td><td>${nOv(d.estufa)}</td><td><b>${dif(d.estufa,d.portatil)}</b></td><td>${nOv(d.temp)}</td>
+      <td>${inp(d,'cargill','mi')}</td><td><b data-dc="${d.fecha}">${dif(cn, d.estufa)}</b></td>
+      ${desp?`<td>${inp(d,'despPort','mi')}</td><td>${inp(d,'despEst','mi')}</td><td><b data-dd="${d.fecha}">${dif(de,dp)}</b></td>`:''}</tr>`; }).join('')}
+    <tr class="tot"><td class="l">Promedio</td><td>${act.length} días</td><td></td><td>${act.reduce((s,d)=>s+d.camiones,0)}</td>
+      <td>${n2(P)}</td><td>${n2(E)}</td><td>${n2(E-P)}</td><td>${n2(T)}</td><td>${n2(C)}</td><td>${n2(C-E)}</td>${desp?`<td>${n2(DP)}</td><td>${n2(DE)}</td><td>${n2(DE-DP)}</td>`:''}</tr></table>`;
+  const r = m.resumen;
+  $('mesInfo').innerHTML = `<div class="gen">
+    <div class="hd"><b style="word-break:break-word">${esc(nombreResumen(m.mes))}</b>${r?'<span class="pill good">Generado</span>':'<span class="pill">No generado</span>'}</div>
+    <div class="hint">${act.length} días de recepción · ${m.dias.filter(d=>valMes(d,'despacho')).length} de despacho · ${m.novedades.length} novedad(es)${r?' · generado '+esc(r.generado):''}</div>
+    <div class="hint">Portátil = ${m.portatil==='camiones'?'promedio de todas las lecturas del FO0104':'promedio del referencial de las muestras del FO0167'}.</div>
+    ${cambios?`<div class="hint bad">Hay ${cambios} día(s) con cambios sin guardar.</div>`:''}
+    ${r?`<div class="links"><a href="${esc(r.pdf)}" target="_blank">PDF</a><a href="${esc(r.excel)}" target="_blank">Excel</a><a href="${esc(r.planilla)}" target="_blank">Planilla</a><a href="${esc(r.carpeta)}" target="_blank">Carpeta</a></div>`:''}
+    <button class="btn ${r?'ghost':''}" id="btnResumen" ${S.online?'':'disabled'}>${r?'Regenerar':'Generar'} Excel + PDF</button>
+    ${r&&S.online?`<button class="btn" data-mail="Mensual" style="margin-top:8px">✉ Enviar por correo</button>`:''}
+  </div>`;
+  $('lblNovMes').textContent = m.novedades.length ? `· ${m.novedades.length}` : '';
+  $('mesNov').innerHTML = m.novedades.length ? `<table class="tbl"><tr><th>Fecha</th><th>Patente</th><th class="r">H° %</th><th>Novedad</th></tr>
+    ${m.novedades.map(x=>`<tr class="click" data-f="${x.fecha}"><td>${x.fecha.slice(8)}/${x.fecha.slice(5,7)} ${esc(x.hora)}</td><td><b>${esc(x.patente)}</b></td>
+      <td class="r"><span class="pill ${x.sobreBase?'bad':''}">${n1(+x.h)}</span></td><td>${esc([x.sobreBase?'H° sobre base':'', x.anomalia, x.obs].filter(Boolean).join(' · '))}</td></tr>`).join('')}</table>`
+    : '<div class="hint">Sin novedades en el mes.</div>';
+  $('btnMesGuardar').disabled = !cambios;
+}
+function nombreResumen(mes){
+  const M = +mes.slice(5,7), N = ['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
+  return `${String(M).padStart(2,'0')} - ${N[M-1]} - Resumen de Humedad - Recepcion - Camiones OTS`;
+}
+function filasMes(){
+  return Object.keys(S.mesEd).map(f=>{ const d = S.mes.dias.find(x=>x.fecha===f), o = {};
+    ['recepcion','despacho','feriado','horario','cargill','despPort','despEst','obs'].forEach(k=>o[k]=valMes(d,k));
+    ['cargill','despPort','despEst'].forEach(k=>{ const n=num(o[k]); if(o[k]!=='' && !(n>0 && n<40)) throw new Error(`Valor inválido el día ${d.dia}.`); o[k] = o[k]===''?'':n; });
+    o.fecha = f; return o; });
+}
+async function guardarMesUI(){
+  if(!Object.keys(S.mesEd).length) return;
+  S.mes = await api('guardarMes', S.mes.mes, filasMes(), $('inspector').value); S.mesEd = {}; renderMes(); toast('Mes guardado');
+}
+async function generarResumenUI(){
+  if(Object.keys(S.mesEd).length) await guardarMesUI();
+  S.mes = await api('generarResumen', S.mes.mes); renderMes();
+  toast('Resumen mensual generado');
+  abrirMail('Mensual', S.mes.mes, nombreResumen(S.mes.mes));
+}
+function pegarCargill(){
+  const mes = S.mes && S.mes.mes; if(!mes) return;
+  let n = 0, fuera = 0;
+  $('cargillPaste').value.split(/\r?\n/).forEach(l=>{
+    const m = l.match(/(\d{1,2})[\/\-.](\d{1,2})(?:[\/\-.](\d{2,4}))?\D+?(\d{1,2}[.,]\d+)/);
+    if(!m) return;
+    const f = `${mes}-${m[1].padStart(2,'0')}`;
+    if(+m[2] !== +mes.slice(5,7) || !S.mes.dias.some(d=>d.fecha===f)){ fuera++; return; }
+    setMes(f, 'cargill', m[4].replace(',','.')); n++;
+  });
+  renderMes();
+  toast(n ? `${n} día(s) cargados${fuera?` · ${fuera} fuera del mes`:''}. Revise y guarde.` : 'No se reconoció ninguna fila (formato: fecha  humedad).', !n);
 }
 
 /* ================= EDICIÓN ================= */
@@ -681,7 +889,9 @@ function abrirEdicion(tipo, id){
         <div class="f"><label>H° %</label><input id="e_h" inputmode="decimal" class="num" value="${v(r.h)}"></div>
         <div class="f"><label>T °C</label><input id="e_t" inputmode="decimal" class="num" value="${v(r.t)}"></div>
       </div>
+      <div class="f"><label>Anomalías</label><div class="chips wrap" id="e_anoms"></div></div>
       <div class="f"><label>Observaciones</label><input id="e_obs" value="${esc(r.obs)}"></div>`;
+    chipsAnom('e_anoms', r.anomalia);
   }
   const sinSubir = !!opPendienteDe(id);
   $('edMotivo').value=''; $('edMotivo').parentNode.style.display = sinSubir ? 'none' : '';
@@ -698,8 +908,8 @@ function datosEdicion(tipo){
     if(!(d.h>0 && d.h<40)) throw new Error('Humedad de estufa inválida.');
     return d;
   }
-  const d = { patente:pat($('e_pat').value), chofer:$('e_cho').value.trim().toUpperCase(), hora:$('e_hora').value, h:num($('e_h').value), t:num($('e_t').value), obs:$('e_obs').value.trim() };
-  validarLectura(d);
+  const d = { patente:pat($('e_pat').value), chofer:$('e_cho').value.trim().toUpperCase(), hora:$('e_hora').value, h:num($('e_h').value), t:num($('e_t').value), obs:$('e_obs').value.trim(), anomalia:anomSel('e_anoms') };
+  validarLectura(d); validarAnom(d.anomalia, d.obs);
   return d;
 }
 function guardarEdicion(){
@@ -841,10 +1051,11 @@ async function buscar(){
 function ir(v){
   document.querySelectorAll('.view').forEach(s=>s.classList.toggle('on', s.id==='v-'+v));
   document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on', b.dataset.v===v));
+  document.body.classList.toggle('ancho', v==='mes');
   window.scrollTo(0,0);
 }
 const seguro = fn => () => { try{ fn(); }catch(e){ toast(e.message||String(e), true); } };
-document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>ir(b.dataset.v));
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{ ir(b.dataset.v); if(b.dataset.v==='mes' && !S.mes && S.cfg){ $('mesSel').value = S.fecha.slice(0,7); cargarMes(); } });
 $('fecha').onchange = ()=>{ if($('fecha').value) cambiarFecha($('fecha').value); };
 $('btnHoy').onclick = ()=>cambiarFecha(isoLocal(new Date()));
 $('patente').oninput = ()=>{ $('patente').value=$('patente').value.toUpperCase(); onPatente(); };
@@ -874,6 +1085,32 @@ $('listaMuestras').onclick = e=>{ const b=e.target.closest('tr[data-mid]'); if(b
 document.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{ rango(b.dataset.r); $('btnBuscar').click(); });
 $('btnBuscar').onclick = ()=>ocupado($('btnBuscar'), buscar);
 $('resHist').onclick = e=>{ const tr=e.target.closest('tr[data-f]'); if(!tr) return; cambiarFecha(tr.dataset.f); ir('dia'); };
+$('anoms').onclick = e=>{ const b=e.target.closest('.chip'); if(b) b.classList.toggle('on'); };
+$('edCampos').addEventListener('click', e=>{ const b=e.target.closest('#e_anoms .chip'); if(b) b.classList.toggle('on'); });
+$('novDia').onclick = e=>{ const it=e.target.closest('.item[data-id]'); if(it) abrirEdicion('lectura', it.dataset.id); };
+document.addEventListener('click', e=>{ const b=e.target.closest('[data-mail]'); if(!b) return;
+  if(b.dataset.mail==='Mensual') abrirMail('Mensual', S.mes.mes, nombreResumen(S.mes.mes));
+  else abrirMail('Diario', S.fecha, nombreInforme(S.dia.informe && S.dia.informe.rde)); });
+$('mailEnviar').onclick = ()=>ocupado($('mailEnviar'), enviarMail);
+$('mailCerrar').onclick = ()=>$('ovMail').classList.remove('on');
+$('ovMail').onclick = e=>{ if(e.target.id==='ovMail') $('ovMail').classList.remove('on'); };
+$('btnMesVer').onclick = ()=>ocupado($('btnMesVer'), cargarMes);
+$('mesSel').onchange = ()=>{ if(Object.keys(S.mesEd).length && !confirm('Hay cambios sin guardar. ¿Descartarlos?')) return; cargarMes(); };
+$('mesDesp').onchange = renderMes;
+// al escribir solo se actualizan las diferencias de esa fila (sin redibujar, para no perder el foco)
+$('mesTabla').addEventListener('input', e=>{ const i=e.target.closest('input[data-k]'); if(!i) return;
+  const f = i.dataset.f, d = S.mes.dias.find(x=>x.fecha===f);
+  setMes(f, i.dataset.k, i.value.trim().replace(',', i.classList.contains('mi')?'.':',')); i.classList.add('cambio');
+  const df = (a,b) => (a===''||b===''||!isFinite(a)||!isFinite(b)) ? '' : n2(a-b), nv = k => { const v=valMes(d,k); return v===''?'':num(v); };
+  const c1 = document.querySelector(`[data-dc="${f}"]`), c2 = document.querySelector(`[data-dd="${f}"]`);
+  if(c1) c1.textContent = df(nv('cargill'), d.estufa);
+  if(c2) c2.textContent = df(nv('despEst'), nv('despPort'));
+  $('btnMesGuardar').disabled = !Object.keys(S.mesEd).length; });
+$('mesTabla').addEventListener('click', e=>{ const b=e.target.closest('.tog'); if(!b) return; const d=S.mes.dias.find(x=>x.fecha===b.dataset.f); setMes(b.dataset.f, b.dataset.k, !valMes(d, b.dataset.k)); renderMes(); });
+$('btnMesGuardar').onclick = ()=>ocupado($('btnMesGuardar'), guardarMesUI);
+$('btnPegar').onclick = pegarCargill;
+$('mesInfo').addEventListener('click', e=>{ const b=e.target.closest('#btnResumen'); if(b && !b.disabled) ocupado(b, generarResumenUI); });
+$('mesNov').onclick = e=>{ const tr=e.target.closest('tr[data-f]'); if(tr){ cambiarFecha(tr.dataset.f); ir('dia'); } };
 $('btnPin').onclick = ()=>{ PIN=$('pinIn').value; DB.set('pin',PIN); arrancar(); };
 $('estado').onclick = abrirCola;
 $('btnSync').onclick = ()=>ocupado($('btnSync'), async()=>{ await sincronizar(true); abrirCola(); });
@@ -899,7 +1136,8 @@ if(!GAS && 'serviceWorker' in navigator && location.protocol === 'https:') navig
 /* ================= modo vista previa (sin servidor) ================= */
 const MOCK = DEMO ? (()=>{
   let seed=11; const rnd=()=>(seed=(seed*9301+49297)%233280)/233280;
-  const L=[], Mu=[], Inf={}, cam={}; let rde=199, idc=1;
+  const L=[], Mu=[], Inf={}, cam={}, Dias={}, Res={}; let rde=199, idc=1;
+  const CORREOS={ Diario:['operaciones@control-ar.com.py','calidad.ots@cliente.com'], Mensual:['operaciones@control-ar.com.py'] };
   const nombres=['MIGUEL BARBOSA','ADINEI VIEIRA','JOSE BENITEZ','CARLOS GIMENEZ','RAMON ACOSTA','LUIS FRANCO','PEDRO RUIZ','JUAN GAONA','DIEGO ROJAS','MARCOS SOUZA','ANDRES CABRAL','HUGO MARTINEZ','RICARDO SILVA','FABIO LOPES','OSCAR VERA'];
   const letras='ABCDEFGHJKLMNPRSTUVXYZ';
   const flota=Array.from({length:120},(_,i)=>{ const p=Array.from({length:3},()=>letras[Math.floor(rnd()*letras.length)]).join('')+String(100+Math.floor(rnd()*899)); return {p, c:nombres[i%nombres.length]}; });
@@ -911,23 +1149,41 @@ const MOCK = DEMO ? (()=>{
     const nCam = k===0 ? 34 : 20+Math.floor(rnd()*70); const ev=[];
     for(let i=0;i<nCam;i++){ const c=flota[i]; const viajes = rnd()<.12 ? 6+Math.floor(rnd()*2) : 1+Math.floor(rnd()*4);
       let m=360+Math.floor(rnd()*240); for(let v=0;v<viajes;v++){ ev.push({m,c}); m+=55+Math.floor(rnd()*60); } }
-    ev.sort((a,b)=>a.m-b.m).forEach(e=>{ if(e.m<1200) add(f,hm(e.m),e.c,Math.round((10.3+rnd()*2.6)*10)/10,Math.round((21+rnd()*3.5)*10)/10, rnd()<.5?'Fatima Rojas':'Inspector 2'); });
+    ev.sort((a,b)=>a.m-b.m).forEach(e=>{ if(e.m<1200) add(f,hm(e.m),e.c,Math.round((10.4+rnd()*2.25)*10)/10,Math.round((21+rnd()*3.5)*10)/10, rnd()<.5?'Fatima Rojas':'Inspector 2'); });
     if(k>0 && k<25){ Inf[f]={rde:String(rde-k),carpeta:'#',planilla:'#',pdf:'#',hojas:Math.ceil(nCam/25),generado:f+' 18:40',pendiente:false};
       const ps=[...new Set(L.filter(x=>x.fecha===f).map(x=>x.patente))];
       for(let s=0;s<Math.ceil(ps.length/10);s++){ const p=ps[s*10]; const r=L.find(x=>x.fecha===f&&x.patente===p);
         Mu.push({id:String(idc++),fecha:f,n:s+1,patente:p,ref:r.h,h:Math.round((r.h+(rnd()-.4)*.6)*100)/100,gi:6.81,gf:6.04,tiempo:'0:27',inspector:'Fatima Rojas',obs:'',estado:'ACTIVO'}); } }
   }
+  L.filter((x,i)=>i%41===7).forEach((x,i)=>{ x.anomalia = ['Insecto vivo','Punto negro','Olor extraño'][i%3]; });
+  const mesM = mes => {
+    const Y=+mes.slice(0,4), M=+mes.slice(5,7), nd=new Date(Y,M,0).getDate(), hoy=isoLocal(new Date());
+    const pr = a => { a=a.filter(v=>typeof v==='number'&&isFinite(v)); return a.length ? Math.round(a.reduce((x,y)=>x+y,0)/a.length*100)/100 : ''; };
+    const dias=[];
+    for(let d=1; d<=nd; d++){ const f=`${mes}-${String(d).padStart(2,'0')}`, l=L.filter(x=>x.fecha===f&&x.estado!=='ANULADO'), m=Mu.filter(x=>x.fecha===f&&x.estado!=='ANULADO'), x=Dias[f]||{}, dow=new Date(Y,M-1,d).getDay();
+      const hs=l.map(r=>r.hora).sort(), span=hs.length?((+hs[hs.length-1].slice(0,2)*60+ +hs[hs.length-1].slice(3))-(+hs[0].slice(0,2)*60+ +hs[0].slice(3)))/60:0;
+      const ci = f.slice(8)<'20' && l.length ? Math.round((pr(m.map(r=>r.h))||11.8)*100+ (d%5-2)*7)/100 : '';
+      dias.push({ fecha:f, dia:d, dow, camiones:new Set(l.map(r=>r.patente)).size, viajes:l.length, muestras:m.length,
+        portatil:pr(m.map(r=>r.ref)), estufa:pr(m.map(r=>r.h)), temp:pr(l.map(r=>r.t)), alertas:l.filter(r=>r.h>12.5||r.anomalia).length,
+        sugerido: hs.length ? (span>=20?'24 hs':Math.max(1,Math.round(span))+' hs') : (f<hoy&&dow!==0?'Sin Movimiento':''),
+        recepcion: 'recepcion' in x ? !!x.recepcion : l.length>0, despacho:!!x.despacho, feriado:!!x.feriado, horario:x.horario||'',
+        cargill: 'cargill' in x ? x.cargill : ci, despPort:x.despPort??'', despEst:x.despEst??'', obs:x.obs||'' }); }
+    const novedades=L.filter(x=>x.fecha.slice(0,7)===mes&&x.estado!=='ANULADO'&&(x.h>12.5||x.anomalia)).sort((a,b)=>(a.fecha+a.hora).localeCompare(b.fecha+b.hora))
+      .map(x=>({fecha:x.fecha,hora:x.hora,patente:x.patente,chofer:x.chofer,h:x.h,t:x.t,anomalia:x.anomalia||'',obs:x.obs,sobreBase:x.h>12.5}));
+    return { mes, base:12.5, portatil:'muestras', dias, novedades, resumen:Res[mes]||null };
+  };
   const renum = f => { const c={}; L.filter(x=>x.fecha===f&&x.estado!=='ANULADO').sort((a,b)=>a.hora.localeCompare(b.hora)).forEach(x=>{ x.viaje=c[x.patente]=(c[x.patente]||0)+1; }); };
   [...new Set(L.map(x=>x.fecha))].forEach(renum);
   const dia = f => ({ fecha:f, lecturas:L.filter(x=>x.fecha===f).sort((a,b)=>a.hora.localeCompare(b.hora)),
     muestras:Mu.filter(x=>x.fecha===f).sort((a,b)=>a.n-b.n), informe:Inf[f]||null });
   return {
     init:()=>({ hoy:isoLocal(new Date()), base:12.5, porMuestra:10, filasHoja:25, viajesFila:5, maxMuestras:15,
+      anomalias:ANOM_DEF, correos:{ Diario:[...CORREOS.Diario], Mensual:[...CORREOS.Mensual], Alertas:['calidad@control-ar.com.py'] },
       inspectores:['Fatima Rojas','Inspector 2'], camiones:Object.keys(cam).map(p=>({p,c:cam[p]})) }),
     getDia:(pin,f)=>dia(f),
     sync:(pin,ops)=>({ servidor:'', resultados: ops.map(op=>{
       try{
-        if(op.op==='lectura'){ if(!L.some(x=>x.id===op.id)) add(op.fecha,op.hora,{p:op.patente,c:op.chofer},op.h,op.t,op.inspector,op.id,op.creado); }
+        if(op.op==='lectura'){ if(!L.some(x=>x.id===op.id)){ add(op.fecha,op.hora,{p:op.patente,c:op.chofer},op.h,op.t,op.inspector,op.id,op.creado); Object.assign(L[L.length-1],{obs:op.obs||'',anomalia:op.anomalia||''}); } }
         else if(op.op==='muestra'){ if(!Mu.some(x=>x.id===op.id)){ const n=Mu.filter(x=>x.fecha===op.fecha).length+1;
           Mu.push({id:op.id,fecha:op.fecha,n,patente:op.patente,ref:op.ref,h:op.h,gi:op.gi,gf:op.gf,tiempo:op.tiempo,inspector:op.inspector,obs:'',estado:'ACTIVO'}); } }
         else { const r=(op.tipo==='muestra'?Mu:L).find(x=>x.id===op.id); if(!r) throw new Error('Registro no encontrado.');
@@ -944,7 +1200,12 @@ const MOCK = DEMO ? (()=>{
       const I=Inf[f]||(Inf[f]={rde:String(++rde),carpeta:'#',planilla:'#'});
       Object.assign(I,{pdf:'',hojas:Math.max(1,Math.ceil(fl.length/25)),generado:f+' '+ahoraHM(),pendiente:false});
       const p=f.split('-'); return { dia:dia(f), partes:[], nombre:`${I.rde}-Control de Humedad y Temp. Camiones - Harina de Soja ${p[2]}-${p[1]}-${p[0]}` }; },
-    guardarPdf:(pin,f)=>{ Inf[f].pdf='#'; return dia(f); }
+    guardarPdf:(pin,f)=>{ Inf[f].pdf='#'; return dia(f); },
+    getMes:(pin,mes)=>mesM(mes),
+    guardarMes:(pin,mes,filas)=>{ filas.forEach(x=>Dias[x.fecha]=Object.assign({},x)); return mesM(mes); },
+    generarResumen:(pin,mes)=>{ Res[mes]={carpeta:'#',planilla:'#',excel:'#',pdf:'#',generado:ahoraTxt()}; return mesM(mes); },
+    enviarCorreo:(pin,o)=>{ if(o.guardar) o.para.forEach(c=>{ if(!CORREOS[o.tipo].includes(c)) CORREOS[o.tipo].push(c); });
+      return { enviados:o.para.length, asunto:'', correos:{ Diario:[...CORREOS.Diario], Mensual:[...CORREOS.Mensual], Alertas:['calidad@control-ar.com.py'] } }; }
   };
 })() : null;
 
