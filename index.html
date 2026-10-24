@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Control de Humedad · Camiones</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0d6b6b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root{
+  --bg:#eef3f3; --card:#ffffff; --ink:#122626; --muted:#5b7171; --line:#dbe5e5;
+  --brand:#0f7c7c; --brand-ink:#ffffff; --soft:#e2f1f0; --head:#0d6b6b;
+  --bad:#c0392b; --bad-bg:#fdecea; --good:#1d8a4a; --good-bg:#e6f5ec; --amber:#a86b10; --amber-bg:#fdf3e1;
+  --r:14px; --sh:0 1px 2px rgba(0,0,0,.04),0 6px 18px rgba(13,80,80,.07);
+}
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#0c1515; --card:#142120; --ink:#e4efee; --muted:#8fa7a5; --line:#24383a;
+    --brand:#2bb3a8; --brand-ink:#04211f; --soft:#173634; --head:#0b4f4f;
+    --bad:#ff806f; --bad-bg:#3a1f1c; --good:#55d08b; --good-bg:#14301f; --amber:#f0b45a; --amber-bg:#36290f; }
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding-bottom:calc(78px + env(safe-area-inset-bottom))}
+header{position:sticky;top:0;z-index:10;background:var(--head);color:#fff;padding:10px 16px 12px;box-shadow:0 2px 10px rgba(0,0,0,.15)}
+.top{display:flex;align-items:center;gap:10px;max-width:760px;margin:0 auto}
+.logo{width:34px;height:34px;border-radius:10px;background:rgba(255,255,255,.15);display:grid;place-items:center;flex:none}
+.ttl{flex:1;min-width:0}
+.ttl b{display:block;font-size:15px;letter-spacing:.2px}
+.ttl small{opacity:.8;font-size:12px}
+.datebox{display:flex;align-items:center;gap:6px;max-width:760px;margin:10px auto 0}
+.datebox input{flex:1;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.25);color:#fff;border-radius:10px;padding:8px 10px;font:inherit;color-scheme:dark}
+.datebox button{background:rgba(255,255,255,.18);border:0;color:#fff;border-radius:10px;padding:9px 12px;font:600 13px/1 inherit;cursor:pointer}
+main{max-width:760px;margin:0 auto;padding:14px 16px}
+.view{display:none}.view.on{display:block}
+.card{background:var(--card);border-radius:var(--r);box-shadow:var(--sh);padding:16px;margin-bottom:14px}
+.card h2{margin:0 0 12px;font-size:16px}
+.card h2 small{color:var(--muted);font-weight:500;font-size:13px}
+label{display:block;font-size:13px;color:var(--muted);margin:0 0 5px;font-weight:600}
+.f{margin-bottom:12px}
+input,select,textarea{width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1.5px solid var(--line);border-radius:11px;padding:12px;outline:none}
+input:focus,select:focus{border-color:var(--brand);background:var(--card)}
+.big{font-size:22px;font-weight:700;letter-spacing:.5px;text-transform:uppercase}
+.num{font-size:22px;font-weight:700;text-align:center}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;border:0;border-radius:12px;padding:15px;font:700 16px/1 inherit;cursor:pointer;background:var(--brand);color:var(--brand-ink)}
+.btn:disabled{opacity:.55}
+.btn.ghost{background:var(--soft);color:var(--ink)}
+.btn.sm{width:auto;padding:10px 14px;font-size:14px}
+.pill{display:inline-flex;align-items:center;gap:6px;background:var(--soft);border-radius:999px;padding:5px 11px;font-size:13px;font-weight:600}
+.pill.bad{background:var(--bad-bg);color:var(--bad)}
+.pill.good{background:var(--good-bg);color:var(--good)}
+.pill.amber{background:var(--amber-bg);color:var(--amber)}
+.hint{font-size:13px;color:var(--muted);margin-top:5px;min-height:18px}
+.hint.bad{color:var(--bad);font-weight:600}
+.chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;border:1.5px solid var(--line);background:var(--card);border-radius:999px;padding:7px 12px;font:600 13px/1.1 inherit;color:var(--ink);cursor:pointer;text-align:left}
+.chip small{display:block;font-weight:500;color:var(--muted);font-size:11px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.stat{background:var(--card);border-radius:12px;box-shadow:var(--sh);padding:12px}
+.stat b{display:block;font-size:22px;line-height:1.1}
+.stat span{font-size:12px;color:var(--muted)}
+.stat.bad b{color:var(--bad)}
+.list{display:flex;flex-direction:column;gap:8px}
+.item{display:flex;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.item:last-child{border:0}
+.item .n{width:30px;height:30px;border-radius:9px;background:var(--soft);display:grid;place-items:center;font-size:13px;font-weight:700;flex:none}
+.item .main{flex:1;min-width:0}
+.item .main b{font-size:15px}
+.item .main small{display:block;color:var(--muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.trips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.trip{border:0;background:var(--soft);border-radius:8px;padding:5px 8px;font:600 12px/1.2 inherit;color:var(--ink);cursor:pointer}
+.trip.bad{background:var(--bad-bg);color:var(--bad)}
+.trip.x{opacity:.45;text-decoration:line-through}
+.sep{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin:14px 0 4px}
+.tbl{width:100%;border-collapse:collapse;font-size:14px}
+.tbl th{text-align:left;font-size:12px;color:var(--muted);font-weight:600;padding:6px 4px;border-bottom:1px solid var(--line)}
+.tbl td{padding:9px 4px;border-bottom:1px solid var(--line)}
+.tbl tr.click{cursor:pointer}
+.tbl .r{text-align:right}
+.seg{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.empty{text-align:center;color:var(--muted);padding:20px 0;font-size:14px}
+a{color:var(--brand);font-weight:600}
+nav{position:fixed;bottom:0;left:0;right:0;z-index:10;background:var(--card);border-top:1px solid var(--line);display:flex;justify-content:center;padding-bottom:env(safe-area-inset-bottom)}
+nav .in{display:flex;max-width:760px;width:100%}
+nav button{flex:1;background:none;border:0;padding:9px 0 10px;color:var(--muted);font:600 11px/1 inherit;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer}
+nav button.on{color:var(--brand)}
+nav svg{width:24px;height:24px}
+#toast{position:fixed;left:50%;bottom:calc(92px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(20px);opacity:0;transition:.25s;background:#173b3a;color:#fff;padding:12px 16px;border-radius:12px;font-size:14px;font-weight:600;z-index:30;max-width:90vw;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+#toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+#toast.bad{background:var(--bad)}
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:40;padding:20px}
+.ov.on{display:flex}
+.ov .card{width:100%;max-width:360px}
+.ov.sheet{align-items:flex-end;padding:0}
+.ov.sheet .card{max-width:560px;border-radius:18px 18px 0 0;margin:0;max-height:92vh;overflow:auto;padding-bottom:calc(16px + env(safe-area-inset-bottom))}
+.btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px}
+.btn.danger{background:var(--bad-bg);color:var(--bad)}
+.gen{border:1.5px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px}
+.gen .hd{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
+.gen .hd b{font-size:15px}
+.gen .links{display:flex;gap:14px;flex-wrap:wrap;margin:6px 0 10px;font-size:14px}
+.item.click{cursor:pointer}
+.estado{display:flex;align-items:center;gap:8px;max-width:760px;margin:8px auto 0;border:0;width:100%;border-radius:10px;padding:8px 10px;font:600 13px/1.25 inherit;text-align:left;cursor:pointer;background:rgba(255,255,255,.14);color:#fff}
+.estado .dot{width:9px;height:9px;border-radius:50%;flex:none;background:#5be08f}
+.estado.off{background:#f6c34a;color:#3a2a00}.estado.off .dot{background:#9a5b00}
+.estado.pend{background:rgba(255,255,255,.22)}.estado.pend .dot{background:#f6c34a}
+.estado.err{background:#ff8a7a;color:#3a0b06}.estado.err .dot{background:#8a1c10}
+.estado .sp{flex:1}
+.pend-ic{font-size:11px;opacity:.85}
+.cola-it{padding:10px 0;border-bottom:1px solid var(--line);font-size:14px}
+.cola-it:last-child{border:0}
+.cola-it .e{color:var(--bad);font-size:13px;font-weight:600;margin-top:3px}
+.demo{background:var(--amber-bg);color:var(--amber);font-size:13px;font-weight:600;padding:8px 12px;border-radius:10px;margin-bottom:12px}
+.spin{width:18px;height:18px;border:2.5px solid currentColor;border-right-color:transparent;border-radius:50%;animation:s .7s linear infinite}
+@keyframes s{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<header>
+  <div class="top">
+    <div class="logo"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/></svg></div>
+    <div class="ttl"><b>Control de Humedad · Camiones</b><small>Tres Fronteras OTS · Harina de Soja · FO0104 / FO0167</small></div>
+  </div>
+  <div class="datebox">
+    <input type="date" id="fecha">
+    <button id="btnHoy">Hoy</button>
+  </div>
+  <button class="estado" id="estado"><span class="dot"></span><span class="sp" id="estadoTxt">Conectando…</span><span id="estadoAcc"></span></button>
+</header>
+
+<main>
+  <div id="demo" class="demo" style="display:none">Vista previa con datos de ejemplo.
+    <label style="display:inline-flex;align-items:center;gap:6px;margin:6px 0 0;color:inherit;cursor:pointer"><input type="checkbox" id="simCorte" style="width:auto"> Simular corte de internet</label></div>
+  <div id="sinCfg" class="card" style="display:none"><h2>Se necesita conexión la primera vez</h2><div class="hint">La app descarga la lista de inspectores y camiones una sola vez. Después funciona aunque no haya internet.</div><div class="hint bad" id="sinCfgErr" style="margin:8px 0"></div><button class="btn" onclick="location.reload()">Reintentar</button></div>
+
+  <!-- CARGAR -->
+  <section class="view on" id="v-cargar">
+    <div class="card">
+      <h2>Nueva lectura <small id="lblViaje"></small></h2>
+      <div class="f">
+        <label>Camiones de este día (tocar para repetir viaje)</label>
+        <div class="chips" id="chipsHoy"></div>
+      </div>
+      <div class="f">
+        <label for="patente">Patente</label>
+        <input id="patente" class="big" list="dlCamiones" autocomplete="off" autocapitalize="characters" placeholder="CBE977">
+        <datalist id="dlCamiones"></datalist>
+      </div>
+      <div class="f">
+        <label for="chofer">Chofer</label>
+        <input id="chofer" autocomplete="off" autocapitalize="characters" placeholder="Nombre del chofer">
+      </div>
+      <div class="row3">
+        <div class="f"><label for="hora">Hora</label><input id="hora" type="time" class="num" style="font-size:18px"></div>
+        <div class="f"><label for="hum">H° %</label><input id="hum" inputmode="decimal" class="num" placeholder="11,0"></div>
+        <div class="f"><label for="tem">T °C</label><input id="tem" inputmode="decimal" class="num" placeholder="22,9"></div>
+      </div>
+      <div class="hint" id="hintHum"></div>
+      <div class="f">
+        <label for="obs">Observaciones (opcional)</label>
+        <input id="obs" autocomplete="off">
+      </div>
+      <div class="f">
+        <label for="inspector">Inspector</label>
+        <select id="inspector"></select>
+      </div>
+      <button class="btn" id="btnGuardar">Guardar lectura</button>
+    </div>
+    <div class="card">
+      <h2>Últimos registros <small>tocar para editar</small></h2>
+      <div class="list" id="ultimos"></div>
+    </div>
+  </section>
+
+  <!-- DÍA -->
+  <section class="view" id="v-dia">
+    <div class="stats" id="stats"></div>
+    <div class="card" style="margin-top:14px">
+      <h2>Informe del día <small>FO0167 + FO0104 en un solo PDF</small></h2>
+      <div id="infoInforme"></div>
+    </div>
+    <div class="card">
+      <h2>Planilla FO0104 <small id="lblHojas"></small></h2>
+      <input id="filtro" placeholder="Buscar patente o chofer…" autocomplete="off" style="margin-bottom:6px">
+      <div id="tablaDia"></div>
+    </div>
+  </section>
+
+  <!-- MUESTRAS -->
+  <section class="view" id="v-muestras">
+    <div class="card">
+      <h2>Muestras de laboratorio <small>FO0167</small></h2>
+      <div id="infoMuestras"></div>
+      <div id="infoInf167" style="margin-top:12px"></div>
+    </div>
+    <div class="card">
+      <h2>Nueva muestra</h2>
+      <div class="f">
+        <label for="mPat">Camión muestreado</label>
+        <input id="mPat" class="big" list="dlDia" autocomplete="off" placeholder="Patente">
+        <datalist id="dlDia"></datalist>
+      </div>
+      <div class="row">
+        <div class="f"><label for="mRef">Referencial portátil %</label><input id="mRef" inputmode="decimal" class="num"></div>
+        <div class="f"><label for="mHum">Humedad estufa %</label><input id="mHum" inputmode="decimal" class="num"></div>
+      </div>
+      <div class="row3">
+        <div class="f"><label for="mGi">g inicial</label><input id="mGi" inputmode="decimal" class="num" style="font-size:18px"></div>
+        <div class="f"><label for="mGf">g final</label><input id="mGf" inputmode="decimal" class="num" style="font-size:18px"></div>
+        <div class="f"><label for="mTi">Tiempo</label><input id="mTi" class="num" style="font-size:18px" placeholder="0:27"></div>
+      </div>
+      <div class="hint" id="hintM"></div>
+      <button class="btn" id="btnMuestra">Guardar muestra</button>
+    </div>
+    <div class="card">
+      <h2>Muestras registradas <small>tocar para editar</small></h2>
+      <div id="listaMuestras"></div>
+    </div>
+  </section>
+
+  <!-- HISTORIAL -->
+  <section class="view" id="v-hist">
+    <div class="card">
+      <h2>Buscar registros</h2>
+      <div class="seg">
+        <button class="chip" data-r="mes">Este mes</button>
+        <button class="chip" data-r="mesAnt">Mes anterior</button>
+        <button class="chip" data-r="anio">Este año</button>
+        <button class="chip" data-r="7">Últimos 7 días</button>
+      </div>
+      <div class="row">
+        <div class="f"><label for="hDesde">Desde</label><input id="hDesde" type="date"></div>
+        <div class="f"><label for="hHasta">Hasta</label><input id="hHasta" type="date"></div>
+      </div>
+      <div class="f"><label for="hPat">Patente (opcional)</label><input id="hPat" autocomplete="off" placeholder="Todas"></div>
+      <button class="btn" id="btnBuscar">Buscar</button>
+    </div>
+    <div id="resHist"></div>
+  </section>
+</main>
+
+<nav><div class="in">
+  <button data-v="cargar" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>Cargar</button>
+  <button data-v="dia"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4M7 14h4"/></svg>Día</button>
+  <button data-v="muestras"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3h6M10 3v6L4.5 18.5A2 2 0 0 0 6.2 21h11.6a2 2 0 0 0 1.7-2.5L14 9V3"/><path d="M7 15h10"/></svg>Muestras</button>
+  <button data-v="hist"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>Historial</button>
+</div></nav>
+
+<div id="toast"></div>
+<div class="ov sheet" id="ovEdit"><div class="card">
+  <h2 id="edTitulo">Editar registro</h2>
+  <div id="edCampos"></div>
+  <div class="f">
+    <label for="edMotivo">Motivo del cambio (obligatorio)</label>
+    <input id="edMotivo" autocomplete="off" placeholder="Ej.: error de tipeo en la patente">
+  </div>
+  <div class="hint" id="edHint"></div>
+  <button class="btn" id="edGuardar">Guardar cambios</button>
+  <div class="btns">
+    <button class="btn danger" id="edAnular">Anular registro</button>
+    <button class="btn ghost" id="edCerrar">Cancelar</button>
+  </div>
+</div></div>
+<div class="ov sheet" id="ovCola"><div class="card">
+  <h2>Sincronización</h2>
+  <div class="hint" id="colaInfo"></div>
+  <div id="colaLista" style="margin:8px 0 12px"></div>
+  <button class="btn" id="btnSync">Sincronizar ahora</button>
+  <div style="margin-top:10px"><button class="btn ghost" id="btnColaCerrar">Cerrar</button></div>
+</div></div>
+<div class="ov" id="ovPin"><div class="card">
+  <h2>Ingrese el PIN</h2>
+  <div class="f"><input id="pinIn" type="password" inputmode="numeric" class="num"></div>
+  <button class="btn" id="btnPin">Entrar</button>
+</div></div>
+
+<script>
+/* =====================================================================
+   CONFIGURACIÓN
+   API_URL: solo para la app instalable (GitHub Pages). Pegar la URL /exec
+   de la implementación de Apps Script. Dentro de Apps Script se ignora.
+   ===================================================================== */
+const API_URL = '';
+
+/* ================= modo de funcionamiento ================= */
+const $ = id => document.getElementById(id);
+const GAS = typeof google !== 'undefined' && !!(google.script && google.script.run);
+const DEMO = !GAS && !API_URL;
+const PFX = DEMO ? 'hcdemo_' : 'hc_';
+
+/* ================= almacenamiento en el equipo ================= */
+const DB = {
+  get(k, def){ try{ const v = localStorage.getItem(PFX+k); return v ? JSON.parse(v) : def; }catch(e){ return def; } },
+  set(k, v){ try{ localStorage.setItem(PFX+k, JSON.stringify(v)); return true; }catch(e){ return false; } }
+};
+let PIN = DB.get('pin', '');
+const S = { cfg:null, fecha:'', dias:{}, cola:[], online:true, sync:false, ultimaSync:'', edit:null, almacenOk:true };
+
+/* ================= utilidades ================= */
+const n2 = x => (typeof x === 'number' && isFinite(x)) ? (Math.round(x*100)/100).toFixed(2).replace('.',',') : '–';
+const n1 = x => (typeof x === 'number' && isFinite(x)) ? (Math.round(x*100)/100).toString().replace('.',',') : '–';
+const num = x => { if(x===''||x==null) return NaN; return Number(String(x).replace(',','.')); };
+const fin = x => (x==null || x==='') ? NaN : Number(x);
+const pat = x => String(x||'').toUpperCase().replace(/[\s\-\.]/g,'');
+const esc = s => String(s==null?'':s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const pad = n => String(n).padStart(2,'0');
+const isoLocal = d => d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const ahoraHM = () => { const d=new Date(); return pad(d.getHours())+':'+pad(d.getMinutes()); };
+const ahoraTxt = () => { const d=new Date(); return isoLocal(d)+' '+pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds()); };
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,8);
+const fLarga = f => { const p=f.split('-'); return new Date(+p[0],+p[1]-1,+p[2]).toLocaleDateString('es',{weekday:'short',day:'numeric',month:'short',year:'numeric'}); };
+
+function toast(msg, bad){
+  const t=$('toast'); t.textContent=msg; t.className='on'+(bad?' bad':'');
+  clearTimeout(toast._t); toast._t=setTimeout(()=>t.className='', bad?4500:2600);
+}
+async function ocupado(btn, fn){
+  const txt=btn.innerHTML; btn.disabled=true; btn.innerHTML='<span class="spin"></span>';
+  try{ await fn(); }catch(e){ toast((e&&e.message)||String(e), true); }
+  finally{ btn.disabled=false; btn.innerHTML=txt; }
+}
+
+/* ================= comunicación con el servidor ================= */
+function errRed(msg){ const e = new Error(msg || 'Sin conexión'); e.red = true; return e; }
+function api(fn, ...args){
+  if(DEMO) return new Promise((ok,ko)=>setTimeout(()=>{
+    if($('simCorte').checked) return ko(errRed());
+    try{ ok(JSON.parse(JSON.stringify(MOCK[fn](PIN, ...args)))); }catch(e){ ko(e); }
+  }, 250));
+  if(GAS) return new Promise((ok0,ko0)=>{
+    let listo = false;
+    const ok = v => { if(!listo){ listo = true; clearTimeout(tm); ok0(v); } };
+    const ko = e => { if(!listo){ listo = true; clearTimeout(tm); ko0(e); } };
+    // si Google no responde, avisar en vez de quedar "Conectando…" para siempre
+    const tm = setTimeout(()=>ko(navigator.onLine === false ? errRed()
+      : new Error('El servidor de Google no respondió. Si tiene varias cuentas de Google abiertas en el navegador, abra la app en una ventana de incógnito con una sola cuenta.')),
+      fn==='generarInforme' ? 300000 : 40000);
+    try{
+      google.script.run.withSuccessHandler(ok).withFailureHandler(e=>{
+        const m = (e && e.message) || String(e);
+        ko(/network|NetworkError|failed to fetch|conexi[oó]n|offline/i.test(m) ? errRed(m) : new Error(m));
+      })[fn](PIN, ...args);
+    }catch(e){ ko(e); }
+  });
+  const ctrl = new AbortController(), tm = setTimeout(()=>ctrl.abort(), fn==='generarInforme' ? 300000 : 60000);
+  return fetch(API_URL, { method:'POST', redirect:'follow', signal:ctrl.signal,
+      headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify({ fn, pin:PIN, args }) })
+    .then(r => r.json(), () => { throw errRed(); })
+    .then(r => { if(!r.ok) throw new Error(r.error); return r.data; })
+    .finally(() => clearTimeout(tm));
+}
+
+/* ================= cola de registros pendientes ================= */
+function guardarCola(){
+  S.almacenOk = DB.set('cola', S.cola);
+  if(!S.almacenOk) toast('No se pudo guardar en el equipo. No cierre la app hasta sincronizar.', true);
+}
+function guardarDias(){
+  const ks = Object.keys(S.dias).sort();
+  while(ks.length > 20) delete S.dias[ks.shift()];      // se guardan los últimos 20 días consultados
+  DB.set('dias', S.dias);
+}
+/** Agrega una operación a la cola, actualiza la pantalla y trata de enviarla. */
+function encolar(op){
+  op.opId = uid(); op.creado = ahoraTxt();
+  S.cola.push(op); guardarCola(); render(); sincronizar();
+}
+/** Editar o anular un registro que todavía no llegó al servidor: se corrige directamente en la cola. */
+function opPendienteDe(id){ return S.cola.find(o => (o.op==='lectura'||o.op==='muestra') && o.id===id); }
+
+async function sincronizar(manual){
+  if(S.sync) return;
+  const ops = S.cola.filter(o=>!o.error);
+  if(!ops.length){ if(manual) await refrescarServidor(true); return; }
+  S.sync = true; pintarEstado();
+  try{
+    const r = await api('sync', ops);
+    const ok = new Set(), err = {};
+    r.resultados.forEach(x => { if(x.ok) ok.add(x.opId); else err[x.opId] = x.error; });
+    S.cola = S.cola.filter(o => !ok.has(o.opId));
+    S.cola.forEach(o => { if(err[o.opId]) o.error = err[o.opId]; });
+    guardarCola(); setOnline(true); S.ultimaSync = ahoraHM();
+    const nErr = Object.keys(err).length;
+    if(nErr) toast(`${nErr} registro(s) con error: revise la sincronización`, true);
+    else toast(`${ok.size} registro(s) sincronizado(s)`);
+    S.sync = false;
+    await refrescarServidor();
+  }catch(e){
+    if(e.red) setOnline(false); else toast(e.message, true);
+  }finally{ S.sync = false; pintarEstado(); }
+}
+
+async function refrescarServidor(avisar){
+  try{
+    const d = await api('getDia', S.fecha);
+    S.dias[d.fecha] = d; guardarDias(); setOnline(true);
+    if(d.fecha === S.fecha) render();
+    if(avisar) toast('Actualizado');
+  }catch(e){ if(e.red) setOnline(false); else toast(e.message, true); }
+}
+function setOnline(v){ if(S.online !== v){ S.online = v; render(); } pintarEstado(); }
+
+function pintarEstado(){
+  const b = $('estado'), tx = $('estadoTxt'), ac = $('estadoAcc');
+  const n = S.cola.filter(o=>!o.error).length, ne = S.cola.filter(o=>o.error).length;
+  b.className = 'estado' + (ne ? ' err' : !S.online ? ' off' : n ? ' pend' : '');
+  if(S.sync){ tx.textContent = `Sincronizando ${n} registro(s)…`; ac.innerHTML = '<span class="spin" style="width:14px;height:14px"></span>'; return; }
+  if(ne) tx.textContent = `${ne} registro(s) con error · tocar para revisar`;
+  else if(!S.online) tx.textContent = n ? `Sin conexión · ${n} pendiente(s) guardados en este equipo` : 'Sin conexión · puede seguir cargando';
+  else if(n) tx.textContent = `${n} pendiente(s) · tocar para sincronizar`;
+  else tx.textContent = 'En línea · todo sincronizado' + (S.ultimaSync ? ` (${S.ultimaSync})` : '');
+  ac.textContent = (n||ne) ? '›' : '';
+}
+
+/* ================= vista del día = datos del servidor + cola ================= */
+function diaVista(fecha){
+  const base = S.dias[fecha] || { fecha, lecturas:[], muestras:[], informe:null };
+  const d = JSON.parse(JSON.stringify(base));
+  d.muestras.forEach(m => { m.ref=fin(m.ref); m.h=fin(m.h); m.gi=fin(m.gi); m.gf=fin(m.gf); });
+  d.lecturas.forEach(l => { l.h=fin(l.h); l.t=fin(l.t); });
+  const ops = S.cola.filter(o => o.fecha === fecha);
+  ops.forEach(op => {
+    if(op.op==='lectura') d.lecturas.push({ id:op.id, fecha, hora:op.hora, patente:op.patente, chofer:op.chofer, viaje:0,
+      h:op.h, t:op.t, inspector:op.inspector, obs:op.obs||'', estado:'ACTIVO', pend:true, error:op.error, reg:op.creado });
+    else if(op.op==='muestra') d.muestras.push({ id:op.id, fecha, n:999, patente:op.patente, ref:op.ref, h:op.h, gi:op.gi, gf:op.gf,
+      tiempo:op.tiempo, inspector:op.inspector, estado:'ACTIVO', pend:true, error:op.error });
+    else {
+      const r = (op.tipo==='muestra' ? d.muestras : d.lecturas).find(x => x.id === op.id);
+      if(!r) return;
+      if(op.op==='anular') r.estado = 'ANULADO'; else Object.assign(r, op.datos);
+      r.pend = true; r.error = op.error;
+    }
+  });
+  d.lecturas = d.lecturas.map((x,i)=>[x,i]).sort((a,b)=> a[0].hora<b[0].hora?-1 : a[0].hora>b[0].hora?1 : a[1]-b[1]).map(x=>x[0]);
+  const c = {}; d.lecturas.forEach(r => { if(r.estado!=='ANULADO') r.viaje = c[r.patente] = (c[r.patente]||0)+1; });
+  d.pendientes = ops.length;
+  if(d.informe && ops.length) d.informe.pendiente = true;
+  return d;
+}
+
+/* ======== misma lógica que el servidor (filas del FO0104) ======== */
+const activas = () => S.dia.lecturas.filter(r=>r.estado!=='ANULADO');
+function armarFilas(L){
+  const filas=[], ab={}, ct={}, max=S.cfg.viajesFila;
+  L.forEach(r=>{
+    let f=ab[r.patente];
+    if(!f || f.viajes.length>=max){ f={patente:r.patente,chofer:r.chofer,cont:!!f,desde:(ct[r.patente]||0)+1,viajes:[]}; filas.push(f); ab[r.patente]=f; }
+    ct[r.patente]=(ct[r.patente]||0)+1; f.viajes.push(r);
+  });
+  return filas;
+}
+function stats(L){
+  if(!L.length) return {camiones:0,viajes:0,alertas:0};
+  const H=L.map(r=>r.h), T=L.map(r=>r.t), sum=a=>a.reduce((x,y)=>x+y,0);
+  return { camiones:new Set(L.map(r=>r.patente)).size, viajes:L.length,
+    hProm:sum(H)/H.length, tProm:sum(T)/T.length, hMax:Math.max(...H), hMin:Math.min(...H),
+    tMax:Math.max(...T), tMin:Math.min(...T), alertas:H.filter(h=>h>S.cfg.base).length };
+}
+
+/* ================= arranque ================= */
+async function arrancar(){
+  if(DEMO) $('demo').style.display='block';
+  S.cfg = DB.get('cfg', null); S.cola = DB.get('cola', []); S.dias = DB.get('dias', {});
+  try{
+    const c = await api('init');
+    if(S.cfg) c.camiones = fusionCamiones(c.camiones, S.cfg.camiones);
+    S.cfg = c; DB.set('cfg', c); S.online = true;
+  }catch(e){
+    if(/PIN/i.test(e.message||'')){ $('ovPin').classList.add('on'); return; }
+    if(e.red) S.online = false; else toast(e.message||String(e), true);
+    if(!S.cfg){ $('sinCfgErr').textContent = e.red ? '' : 'Detalle: ' + (e.message||String(e)); $('sinCfg').style.display='block'; document.querySelectorAll('.view').forEach(v=>v.style.display='none'); pintarEstado(); return; }
+  }
+  $('ovPin').classList.remove('on'); $('sinCfg').style.display='none';
+  document.querySelectorAll('.view').forEach(v=>v.style.display='');
+  $('inspector').innerHTML = S.cfg.inspectores.map(n=>`<option>${esc(n)}</option>`).join('');
+  const ins = DB.get('insp',''); if(ins && S.cfg.inspectores.includes(ins)) $('inspector').value=ins;
+  llenarCamiones();
+  S.fecha = isoLocal(new Date()); $('fecha').value = S.fecha;
+  rango('mes'); resetForm(); render(); pintarEstado();
+  if(S.online){ await sincronizar(); await refrescarServidor(); }
+  setInterval(()=>{ if(S.cola.some(o=>!o.error) || !S.online) sincronizar(); if(!S.cola.length && !S.online) refrescarServidor(); }, 30000);
+}
+function fusionCamiones(srv, loc){
+  const m = {}; (loc||[]).forEach(c=>m[c.p]=c); (srv||[]).forEach(c=>m[c.p]=c); return Object.values(m);
+}
+function llenarCamiones(){
+  $('dlCamiones').innerHTML = S.cfg.camiones.map(c=>`<option value="${esc(c.p)}">${esc(c.c)}</option>`).join('');
+}
+function cambiarFecha(f){
+  S.fecha = f; $('fecha').value = f; render();
+  if(S.online) refrescarServidor();
+}
+function render(){
+  if(!S.cfg) return;
+  S.dia = diaVista(S.fecha);
+  renderCargar(); renderDia(); renderMuestras(); pintarEstado();
+}
+
+/* ================= CARGAR ================= */
+function viajeDe(p){ return activas().filter(r=>r.patente===p).length + 1; }
+function resetForm(){
+  ['patente','chofer','hum','tem','obs'].forEach(i=>$(i).value='');
+  $('hora').value = ahoraHM(); $('lblViaje').textContent=''; $('hintHum').textContent=''; $('hintHum').className='hint';
+}
+function onPatente(){
+  const p = pat($('patente').value);
+  const c = S.cfg.camiones.find(x=>x.p===p);
+  if(c && (!$('chofer').value || $('chofer').dataset.auto==='1')){ $('chofer').value=c.c; $('chofer').dataset.auto='1'; }
+  $('lblViaje').innerHTML = p ? `<span class="pill">Viaje N° ${viajeDe(p)} de ${esc(p)}</span>` : '';
+}
+function onHum(){
+  const h=num($('hum').value), el=$('hintHum');
+  if(isFinite(h) && h>S.cfg.base){ el.textContent=`⚠ Supera la base de ${n1(S.cfg.base)} % de humedad`; el.className='hint bad'; }
+  else { el.textContent=''; el.className='hint'; }
+}
+const icPend = r => r.pend ? ` <span class="pend-ic" title="Pendiente de sincronizar">${r.error?'⚠':'⏱'}</span>` : '';
+function renderCargar(){
+  const L = activas();
+  const ult = {}; L.forEach(r=>ult[r.patente]=r);
+  const orden = Object.values(ult).sort((a,b)=>b.hora.localeCompare(a.hora));
+  $('chipsHoy').innerHTML = orden.length ? orden.map(r=>
+    `<button class="chip" data-p="${esc(r.patente)}" data-c="${esc(r.chofer)}">${esc(r.patente)}<small>${viajeDe(r.patente)-1} viaje(s) · ${esc(r.hora)}</small></button>`).join('')
+    : '<span class="hint">Todavía no hay camiones este día.</span>';
+  // los últimos CARGADOS (no por hora de lectura)
+  const u = S.dia.lecturas.map((r,i)=>[r,i]).sort((a,b)=>(b[0].reg||'').localeCompare(a[0].reg||'') || b[1]-a[1]).map(x=>x[0]).slice(0,6);
+  $('ultimos').innerHTML = u.length ? u.map(r=>`
+    <div class="item ${r.estado==='ANULADO'?'':'click'}" data-id="${r.estado==='ANULADO'?'':esc(r.id)}">
+      <div class="n">${r.estado==='ANULADO'?'–':r.viaje}</div>
+      <div class="main"><b>${esc(r.patente)}</b>${icPend(r)} <small>${esc(r.chofer)} · ${esc(r.hora)}${r.estado==='ANULADO'?' · ANULADO':''}</small></div>
+      <span class="pill ${r.h>S.cfg.base?'bad':''}">${n1(r.h)} %</span>
+      <span class="pill">${n1(r.t)} °C</span>
+    </div>`).join('') : '<div class="empty">Sin registros.</div>';
+}
+function guardar(){
+  const d = { op:'lectura', id:uid(), fecha:S.fecha, patente:pat($('patente').value), chofer:$('chofer').value.trim().toUpperCase(),
+    hora:$('hora').value, h:num($('hum').value), t:num($('tem').value), obs:$('obs').value.trim(), inspector:$('inspector').value };
+  validarLectura(d);
+  const v = viajeDe(d.patente);
+  const c = S.cfg.camiones.find(x=>x.p===d.patente);
+  if(c){ if(d.chofer) c.c=d.chofer; } else { S.cfg.camiones.push({p:d.patente,c:d.chofer}); llenarCamiones(); }
+  DB.set('cfg', S.cfg);
+  encolar(d); resetForm();
+  toast(`Guardado · ${d.patente} viaje ${v}${d.h>S.cfg.base?' · SUPERA BASE':''}${S.online?'':' · sin conexión, queda pendiente'}`, d.h>S.cfg.base);
+  $('patente').focus();
+}
+function validarLectura(d){
+  if(!d.patente) throw new Error('Ingrese la patente.');
+  if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(d.hora||'')) throw new Error('Hora inválida.');
+  if(!(d.h>0 && d.h<40)) throw new Error('Humedad fuera de rango.');
+  if(!(d.t>-5 && d.t<70)) throw new Error('Temperatura fuera de rango.');
+}
+
+/* ================= DÍA ================= */
+function renderDia(){
+  const L = activas(), st = stats(L), filas = armarFilas(L);
+  const hojas = Math.max(1, Math.ceil(filas.length / S.cfg.filasHoja));
+  const sug = Math.ceil(st.camiones / S.cfg.porMuestra);
+  const mu = S.dia.muestras.filter(m=>m.estado!=='ANULADO').length;
+  $('stats').innerHTML = `
+    <div class="stat"><b>${st.camiones}</b><span>Camiones</span></div>
+    <div class="stat"><b>${st.viajes}</b><span>Viajes</span></div>
+    <div class="stat"><b>${filas.length}</b><span>Filas · ${hojas} hoja(s)</span></div>
+    <div class="stat ${st.hProm>S.cfg.base?'bad':''}"><b>${n2(st.hProm)}</b><span>H° promedio %</span></div>
+    <div class="stat"><b>${n2(st.tProm)}</b><span>Temp. prom. °C</span></div>
+    <div class="stat ${st.alertas?'bad':''}"><b>${st.alertas}</b><span>Sobre base ${n1(S.cfg.base)}%</span></div>
+    <div class="stat"><b>${n1(st.hMax)} / ${n1(st.hMin)}</b><span>Pico H° alto / bajo</span></div>
+    <div class="stat"><b>${n1(st.tMax)} / ${n1(st.tMin)}</b><span>Pico T° alto / bajo</span></div>
+    <div class="stat ${mu<sug?'bad':''}"><b>${mu} / ${sug}</b><span>Muestras / sugeridas</span></div>`;
+  $('infoInforme').innerHTML = bloqueInforme();
+  $('lblHojas').textContent = `· ${filas.length} filas en ${hojas} hoja(s) de ${S.cfg.filasHoja}`;
+  renderTabla(filas);
+}
+function renderTabla(filas){
+  const q = pat($('filtro').value);
+  let html='', base=S.cfg.filasHoja;
+  filas.forEach((f,i)=>{
+    if(i%base===0) html += `<div class="sep">Hoja ${i/base+1} · filas ${i+1}–${Math.min(i+base, filas.length)}</div>`;
+    if(q && f.patente.indexOf(q)<0 && pat(f.chofer).indexOf(q)<0) return;
+    html += `<div class="item" style="align-items:flex-start">
+      <div class="n">${(i%base)+1}</div>
+      <div class="main"><b>${esc(f.patente)}</b> ${f.cont?`<span class="pill amber" style="font-size:11px;padding:2px 8px">continuación ${f.desde}–${f.desde+f.viajes.length-1}</span>`:''}
+        <small>${esc(f.chofer)}</small>
+        <div class="trips">${f.viajes.map((v,j)=>`<button class="trip ${v.h>S.cfg.base?'bad':''}" data-id="${esc(v.id)}" title="Tocar para editar">${f.desde+j}º ${esc(v.hora)} · ${n1(v.h)}% · ${n1(v.t)}°${v.pend?(v.error?' ⚠':' ⏱'):''}</button>`).join('')}</div>
+      </div></div>`;
+  });
+  const anul = S.dia.lecturas.filter(r=>r.estado==='ANULADO');
+  if(anul.length) html += `<div class="sep">Anuladas (${anul.length})</div><div class="trips">${anul.map(v=>`<span class="trip x">${esc(v.patente)} ${esc(v.hora)} · ${n1(v.h)}%</span>`).join('')}</div>`;
+  $('tablaDia').innerHTML = filas.length ? html : '<div class="empty">Sin registros en este día.</div>';
+}
+
+/* Informe del día: un solo archivo y un solo PDF (página 1 FO0167, luego las hojas FO0104) */
+function nombreInforme(rde){
+  const p=S.fecha.split('-');
+  return `${rde||'000'}-Control de Humedad y Temp. Camiones - Harina de Soja ${p[2]}-${p[1]}-${p[0]}`;
+}
+function bloqueInforme(){
+  const x = S.dia.informe, L = activas();
+  const nMu = S.dia.muestras.filter(m=>m.estado!=='ANULADO').length;
+  const filas = armarFilas(L), hojas = Math.max(1, Math.ceil(filas.length/S.cfg.filasHoja));
+  const sug = Math.ceil(new Set(L.map(r=>r.patente)).size / S.cfg.porMuestra);
+  const pend = S.dia.pendientes;
+  const estado = !x ? '<span class="pill">No generado</span>'
+    : x.pendiente ? '<span class="pill amber">Hubo cambios · regenerar</span>'
+    : !x.pdf ? '<span class="pill amber">PDF pendiente</span>' : '<span class="pill good">Al día</span>';
+  const bloqueo = !L.length ? 'Sin lecturas en este día.'
+    : !S.online ? 'Sin conexión: el informe se genera en Google Drive. Puede seguir cargando; genere al reconectar.'
+    : pend ? `Hay ${pend} registro(s) sin sincronizar. Sincronice antes de generar.` : '';
+  return `<div class="gen">
+    <div class="hd"><b style="word-break:break-word">${esc(nombreInforme(x&&x.rde))}.pdf</b>${estado}</div>
+    <div class="hint">Pág. 1: Informe FO0167 (${nMu} muestra${nMu===1?'':'s'}) · Pág. 2${hojas>1?'–'+(hojas+1):''}: FO0104 (${filas.length} filas, ${hojas} hoja${hojas>1?'s':''})${x&&x.generado?` · generado ${esc(x.generado)}`:''}</div>
+    ${!x ? '<div class="hint">Se asignará el siguiente N° R.D.E.</div>' : ''}
+    ${nMu<sug && L.length ? `<div class="hint bad">Faltan muestras: ${nMu} de ${sug} sugeridas.</div>` : ''}
+    ${x&&x.planilla?`<div class="links">${x.pdf?`<a href="${esc(x.pdf)}" target="_blank">Abrir PDF</a>`:''}<a href="${esc(x.planilla)}" target="_blank">Planilla</a><a href="${esc(x.carpeta)}" target="_blank">Carpeta del mes</a></div>`:''}
+    <button class="btn ${x&&!x.pendiente&&x.pdf?'ghost':''}" data-gen="1" ${bloqueo?'disabled':''}>${x?'Regenerar informe':'Generar informe'}</button>
+    ${bloqueo?`<div class="hint ${!S.online||pend?'bad':''}">${bloqueo}</div>`:''}
+  </div>`;
+}
+
+/* Une las partes (cada hoja exportada con su orientación) en un único PDF, en el navegador */
+let _pdfLib = null;
+function cargarPdfLib(){
+  if(window.PDFLib) return Promise.resolve();
+  return _pdfLib || (_pdfLib = new Promise((ok,ko)=>{
+    const s=document.createElement('script');
+    s.src='https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js';
+    s.onload=()=>ok(); s.onerror=()=>{ _pdfLib=null; ko(new Error('No se pudo cargar el unificador de PDF.')); };
+    document.head.appendChild(s);
+  }));
+}
+async function unirPdf(partes){
+  await cargarPdfLib();
+  const out = await PDFLib.PDFDocument.create();
+  for(const b64 of partes){
+    const src = await PDFLib.PDFDocument.load(b64);
+    (await out.copyPages(src, src.getPageIndices())).forEach(pg=>out.addPage(pg));
+  }
+  return await out.saveAsBase64();
+}
+async function generarInforme(){
+  if(S.dia.pendientes) throw new Error('Sincronice antes de generar el informe.');
+  const r = await api('generarInforme', S.fecha);
+  S.dias[S.fecha] = r.dia; render();
+  let lista, aviso = '';
+  try{ lista = r.partes.length ? [await unirPdf(r.partes)] : []; }
+  catch(e){ lista = r.partes; aviso = ' (no se pudo unir: se guardó en partes)'; }
+  const d = await api('guardarPdf', S.fecha, lista);
+  S.dias[S.fecha] = d; guardarDias(); render();
+  toast(`${r.nombre}.pdf generado${aviso}`, !!aviso);
+}
+
+/* ================= EDICIÓN ================= */
+function abrirEdicion(tipo, id){
+  const r = tipo==='muestra' ? S.dia.muestras.find(x=>x.id===id) : S.dia.lecturas.find(x=>x.id===id);
+  if(!r || r.estado==='ANULADO') return;
+  S.edit = {tipo, id};
+  const v = x => isFinite(x) ? n1(x) : '';
+  if(tipo==='muestra'){
+    $('edTitulo').textContent = `Editar muestra · ${r.patente}`;
+    $('edCampos').innerHTML = `
+      <div class="f"><label>Camión</label><input id="e_pat" class="big" value="${esc(r.patente)}" list="dlDia"></div>
+      <div class="row">
+        <div class="f"><label>Referencial portátil %</label><input id="e_ref" inputmode="decimal" class="num" value="${v(r.ref)}"></div>
+        <div class="f"><label>Humedad estufa %</label><input id="e_h" inputmode="decimal" class="num" value="${v(r.h)}"></div>
+      </div>
+      <div class="row3">
+        <div class="f"><label>g inicial</label><input id="e_gi" inputmode="decimal" class="num" style="font-size:18px" value="${v(r.gi)}"></div>
+        <div class="f"><label>g final</label><input id="e_gf" inputmode="decimal" class="num" style="font-size:18px" value="${v(r.gf)}"></div>
+        <div class="f"><label>Tiempo</label><input id="e_ti" class="num" style="font-size:18px" value="${esc(r.tiempo)}"></div>
+      </div>`;
+  } else {
+    $('edTitulo').textContent = `Editar lectura · ${r.patente} · viaje ${r.viaje}`;
+    $('edCampos').innerHTML = `
+      <div class="f"><label>Patente</label><input id="e_pat" class="big" value="${esc(r.patente)}" list="dlCamiones"></div>
+      <div class="f"><label>Chofer</label><input id="e_cho" value="${esc(r.chofer)}"></div>
+      <div class="row3">
+        <div class="f"><label>Hora</label><input id="e_hora" type="time" class="num" style="font-size:18px" value="${esc(r.hora)}"></div>
+        <div class="f"><label>H° %</label><input id="e_h" inputmode="decimal" class="num" value="${v(r.h)}"></div>
+        <div class="f"><label>T °C</label><input id="e_t" inputmode="decimal" class="num" value="${v(r.t)}"></div>
+      </div>
+      <div class="f"><label>Observaciones</label><input id="e_obs" value="${esc(r.obs)}"></div>`;
+  }
+  const sinSubir = !!opPendienteDe(id);
+  $('edMotivo').value=''; $('edMotivo').parentNode.style.display = sinSubir ? 'none' : '';
+  $('edHint').textContent = sinSubir ? 'Este registro aún no se sincronizó: la corrección se aplica directamente.'
+    : r.error ? 'Error al sincronizar: ' + r.error
+    : S.dia.informe ? 'Este día ya tiene el informe generado: después del cambio quedará marcado para regenerar.' : '';
+  $('ovEdit').classList.add('on');
+}
+function cerrarEdicion(){ $('ovEdit').classList.remove('on'); S.edit=null; }
+function datosEdicion(tipo){
+  if(tipo==='muestra'){
+    const d = { patente:pat($('e_pat').value), ref:num($('e_ref').value), h:num($('e_h').value), gi:num($('e_gi').value), gf:num($('e_gf').value), tiempo:$('e_ti').value.trim() };
+    if(!d.patente) throw new Error('Ingrese la patente.');
+    if(!(d.h>0 && d.h<40)) throw new Error('Humedad de estufa inválida.');
+    return d;
+  }
+  const d = { patente:pat($('e_pat').value), chofer:$('e_cho').value.trim().toUpperCase(), hora:$('e_hora').value, h:num($('e_h').value), t:num($('e_t').value), obs:$('e_obs').value.trim() };
+  validarLectura(d);
+  return d;
+}
+function guardarEdicion(){
+  const e = S.edit; if(!e) return;
+  const datos = datosEdicion(e.tipo);
+  const p = opPendienteDe(e.id);
+  if(p){ Object.assign(p, datos); delete p.error; guardarCola(); cerrarEdicion(); render(); sincronizar(); toast('Corregido'); return; }
+  const motivo = $('edMotivo').value.trim();
+  if(!motivo){ $('edMotivo').focus(); throw new Error('Indique el motivo del cambio.'); }
+  const f = S.dia[e.tipo==='muestra'?'muestras':'lecturas'].find(x=>x.id===e.id).fecha || S.fecha;
+  cerrarEdicion();
+  encolar({ op:'editar', tipo:e.tipo, id:e.id, fecha:f, datos, motivo, usuario:$('inspector').value });
+  toast(S.online ? 'Cambios guardados' : 'Cambios guardados · pendientes de sincronizar');
+}
+function anularEdicion(){
+  const e = S.edit; if(!e) return;
+  const p = opPendienteDe(e.id);
+  if(p){
+    if(!confirm('Este registro todavía no se sincronizó. ¿Descartarlo?')) return;
+    S.cola = S.cola.filter(o => o!==p && o.id!==e.id); guardarCola(); cerrarEdicion(); render(); toast('Registro descartado'); return;
+  }
+  const motivo = $('edMotivo').value.trim();
+  if(!motivo){ $('edMotivo').focus(); throw new Error('Indique el motivo de la anulación.'); }
+  if(!confirm('¿Anular este registro? Quedará tachado y fuera de los formularios, pero no se borra.')) return;
+  cerrarEdicion();
+  encolar({ op:'anular', tipo:e.tipo, id:e.id, fecha:S.fecha, motivo, usuario:$('inspector').value });
+  toast('Registro anulado');
+}
+
+/* ================= panel de sincronización ================= */
+function describirOp(o){
+  const f = o.fecha ? o.fecha.split('-').reverse().join('/') : '';
+  if(o.op==='lectura') return `Lectura ${o.patente} · ${f} ${o.hora} · ${n1(o.h)}% · ${n1(o.t)}°C`;
+  if(o.op==='muestra') return `Muestra ${o.patente} · ${f} · estufa ${n2(o.h)}%`;
+  if(o.op==='editar') return `Corrección de ${o.tipo==='muestra'?'muestra':'lectura'} · ${f} · "${esc(o.motivo)}"`;
+  return `Anulación de ${o.tipo==='muestra'?'muestra':'lectura'} · ${f} · "${esc(o.motivo)}"`;
+}
+function abrirCola(){
+  const n = S.cola.length;
+  $('colaInfo').textContent = n
+    ? `${n} registro(s) guardados en este equipo, en espera de enviarse.${S.online?'':' Al volver la conexión (o con el anclaje del celular) se envían solos.'}`
+    : `Todo está sincronizado.${S.ultimaSync?' Última sincronización: '+S.ultimaSync:''}`;
+  $('colaLista').innerHTML = S.cola.map(o=>`<div class="cola-it">${o.error?'⚠':'⏱'} ${describirOp(o)}
+    <div class="hint" style="margin:2px 0 0">Cargado ${esc(o.creado)}</div>
+    ${o.error?`<div class="e">${esc(o.error)}</div><div style="display:flex;gap:8px;margin-top:6px"><button class="btn sm ghost" data-reint="${o.opId}">Reintentar</button><button class="btn sm danger" data-desc="${o.opId}">Descartar</button></div>`:''}</div>`).join('');
+  $('ovCola').classList.add('on');
+}
+
+/* ================= MUESTRAS ================= */
+function renderMuestras(){
+  const st = stats(activas()), sug = Math.ceil(st.camiones / S.cfg.porMuestra);
+  const M = S.dia.muestras.filter(m=>m.estado!=='ANULADO');
+  $('infoMuestras').innerHTML = `
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <span class="pill">${st.camiones} camiones</span>
+      <span class="pill ${M.length<sug?'amber':'good'}">${M.length} de ${sug} muestras sugeridas</span>
+      <span class="pill">Máx. ${S.cfg.maxMuestras} por FO0167</span>
+    </div>
+    <div class="hint">1 muestra cada ~${S.cfg.porMuestra} camiones. La temperatura promedio del FO0167 se toma del FO0104.</div>`;
+  $('infoInf167').innerHTML = bloqueInforme();
+  const pats = [...new Set(activas().map(r=>r.patente))];
+  $('dlDia').innerHTML = pats.map(p=>`<option value="${esc(p)}">`).join('');
+  $('listaMuestras').innerHTML = S.dia.muestras.length ? `<table class="tbl">
+    <tr><th>N°</th><th>Camión</th><th class="r">Portátil</th><th class="r">Estufa</th><th class="r">Dif.</th><th class="r">Sólidos</th></tr>
+    ${S.dia.muestras.map(m=>{ const dif = m.h - m.ref, an = m.estado==='ANULADO';
+      return `<tr class="${an?'':'click'}" data-mid="${an?'':esc(m.id)}" style="${an?'opacity:.45;text-decoration:line-through':''}">
+      <td>${an?'–':M.indexOf(m)+1}</td><td><b>${esc(m.patente)}</b>${icPend(m)}</td>
+      <td class="r">${n2(m.ref)}</td><td class="r"><b>${n2(m.h)}</b></td>
+      <td class="r"><span class="pill ${Math.abs(dif)>0.5?'amber':''}">${isFinite(dif)?(dif>0?'+':'')+n2(dif):'–'}</span></td>
+      <td class="r">${n2(100-m.h)}</td></tr>`; }).join('')}
+    </table>` : '<div class="empty">Sin muestras en este día.</div>';
+}
+function onMPat(){
+  const p = pat($('mPat').value);
+  const L = activas().filter(r=>r.patente===p);
+  if(L.length){ $('mRef').value = n1(L[L.length-1].h); }
+  calcM();
+}
+function calcM(){
+  const gi=num($('mGi').value), gf=num($('mGf').value), h=num($('mHum').value), ref=num($('mRef').value);
+  const out=[];
+  if(gi>0 && gf>0 && gf<gi) out.push(`Calculada por peso: ${n2((gi-gf)/gi*100)} %`);
+  if(isFinite(h) && isFinite(ref)) out.push(`Diferencia: ${n2(h-ref)} %`);
+  if(isFinite(h)) out.push(`Sólidos: ${n2(100-h)} %`);
+  $('hintM').textContent = out.join(' · ');
+}
+function guardarMuestra(){
+  const d = { op:'muestra', id:uid(), fecha:S.fecha, patente:pat($('mPat').value), ref:num($('mRef').value), h:num($('mHum').value),
+    gi:num($('mGi').value), gf:num($('mGf').value), tiempo:$('mTi').value.trim(), inspector:$('inspector').value };
+  if(!d.patente) throw new Error('Ingrese la patente.');
+  if(!(d.h>0 && d.h<40)) throw new Error('Ingrese la humedad de estufa.');
+  if(S.dia.muestras.filter(m=>m.estado!=='ANULADO').length >= S.cfg.maxMuestras) throw new Error(`El FO0167 admite hasta ${S.cfg.maxMuestras} muestras por día.`);
+  encolar(d);
+  ['mPat','mRef','mHum','mGi','mGf','mTi'].forEach(i=>$(i).value=''); $('hintM').textContent='';
+  toast(S.online ? 'Muestra guardada' : 'Muestra guardada · pendiente de sincronizar');
+}
+
+/* ================= HISTORIAL (requiere conexión) ================= */
+function rango(t){
+  const h = new Date(); let a, b=new Date(h);
+  if(t==='mes'){ a=new Date(h.getFullYear(),h.getMonth(),1); }
+  else if(t==='mesAnt'){ a=new Date(h.getFullYear(),h.getMonth()-1,1); b=new Date(h.getFullYear(),h.getMonth(),0); }
+  else if(t==='anio'){ a=new Date(h.getFullYear(),0,1); }
+  else { a=new Date(h); a.setDate(a.getDate()-(+t-1)); }
+  $('hDesde').value=isoLocal(a); $('hHasta').value=isoLocal(b);
+}
+async function buscar(){
+  let r;
+  try{ r = await api('getHistorial', $('hDesde').value, $('hHasta').value, $('hPat').value); setOnline(true); }
+  catch(e){
+    if(!e.red) throw e;
+    setOnline(false);
+    const dias = Object.keys(S.dias).sort().reverse();
+    $('resHist').innerHTML = `<div class="card"><h2>Sin conexión</h2><div class="hint">El historial completo se consulta en el servidor. Días guardados en este equipo:</div>
+      <table class="tbl">${dias.map(f=>`<tr class="click" data-f="${f}"><td>${fLarga(f)}</td><td class="r">${S.dias[f].lecturas.filter(l=>l.estado!=='ANULADO').length} viajes</td></tr>`).join('')}</table></div>`;
+    return;
+  }
+  const D = r.dias;
+  const tv = D.reduce((s,d)=>s+d.viajes,0), ta = D.reduce((s,d)=>s+d.alertas,0);
+  const hp = tv ? D.reduce((s,d)=>s+d.hProm*d.viajes,0)/tv : NaN;
+  let html = `<div class="stats" style="margin-bottom:14px">
+    <div class="stat"><b>${D.length}</b><span>Días</span></div>
+    <div class="stat"><b>${tv}</b><span>Viajes</span></div>
+    <div class="stat ${ta?'bad':''}"><b>${n2(hp)}</b><span>H° prom. · ${ta} alertas</span></div></div>`;
+  html += `<div class="card"><h2>Por día <small>tocar para abrir</small></h2>${D.length?`<table class="tbl">
+    <tr><th>Fecha</th><th class="r">Cam.</th><th class="r">Viajes</th><th class="r">H° %</th><th class="r">Mtras</th><th>R.D.E.</th></tr>
+    ${D.map(d=>`<tr class="click" data-f="${d.fecha}"><td>${fLarga(d.fecha)}</td><td class="r">${d.camiones}</td><td class="r">${d.viajes}</td>
+      <td class="r"><span class="pill ${d.alertas?'bad':''}">${n2(d.hProm)}</span></td><td class="r">${d.muestras}</td>
+      <td>${d.informe&&d.informe.rde?`<a href="${esc(d.informe.pdf||d.informe.carpeta)}" target="_blank" onclick="event.stopPropagation()">${esc(d.informe.rde)}</a>`:'<span class="hint">—</span>'}</td></tr>`).join('')}
+    </table>`:'<div class="empty">Sin resultados.</div>'}</div>`;
+  if(r.lecturas.length) html += `<div class="card"><h2>Viajes de ${esc(pat($('hPat').value))}</h2><table class="tbl">
+    <tr><th>Fecha</th><th>Hora</th><th>Chofer</th><th class="r">H° %</th><th class="r">T °C</th></tr>
+    ${r.lecturas.map(l=>`<tr><td>${l.fecha.split('-').reverse().join('/')}</td><td>${esc(l.hora)}</td><td>${esc(l.chofer)}</td>
+      <td class="r"><span class="pill ${fin(l.h)>S.cfg.base?'bad':''}">${n1(fin(l.h))}</span></td><td class="r">${n1(fin(l.t))}</td></tr>`).join('')}</table></div>`;
+  $('resHist').innerHTML = html;
+}
+
+/* ================= eventos ================= */
+function ir(v){
+  document.querySelectorAll('.view').forEach(s=>s.classList.toggle('on', s.id==='v-'+v));
+  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on', b.dataset.v===v));
+  window.scrollTo(0,0);
+}
+const seguro = fn => () => { try{ fn(); }catch(e){ toast(e.message||String(e), true); } };
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>ir(b.dataset.v));
+$('fecha').onchange = ()=>{ if($('fecha').value) cambiarFecha($('fecha').value); };
+$('btnHoy').onclick = ()=>cambiarFecha(isoLocal(new Date()));
+$('patente').oninput = ()=>{ $('patente').value=$('patente').value.toUpperCase(); onPatente(); };
+$('chofer').oninput = ()=>{ $('chofer').dataset.auto='0'; };
+$('hum').oninput = onHum;
+$('inspector').onchange = ()=>DB.set('insp', $('inspector').value);
+$('chipsHoy').onclick = e=>{ const c=e.target.closest('.chip'); if(!c) return;
+  $('patente').value=c.dataset.p; $('chofer').value=c.dataset.c; $('chofer').dataset.auto='1';
+  $('hora').value=ahoraHM(); onPatente(); $('hum').focus(); };
+$('btnGuardar').onclick = seguro(guardar);
+['tem','hum'].forEach(i=>$(i).addEventListener('keydown',e=>{ if(e.key==='Enter') $('btnGuardar').click(); }));
+$('filtro').oninput = ()=>renderTabla(armarFilas(activas()));
+$('tablaDia').onclick = e=>{ const b=e.target.closest('.trip[data-id]'); if(b) abrirEdicion('lectura', b.dataset.id); };
+$('ultimos').onclick = e=>{ const it=e.target.closest('.item[data-id]'); if(it && it.dataset.id) abrirEdicion('lectura', it.dataset.id); };
+document.addEventListener('click', e=>{
+  const b = e.target.closest('[data-gen]'); if(!b || b.disabled) return;
+  ocupado(b, generarInforme);
+});
+$('edGuardar').onclick = seguro(guardarEdicion);
+$('edAnular').onclick = seguro(anularEdicion);
+$('edCerrar').onclick = cerrarEdicion;
+$('ovEdit').onclick = e=>{ if(e.target.id==='ovEdit') cerrarEdicion(); };
+$('mPat').oninput = ()=>{ $('mPat').value=$('mPat').value.toUpperCase(); onMPat(); };
+['mGi','mGf','mHum','mRef'].forEach(i=>$(i).oninput=calcM);
+$('btnMuestra').onclick = seguro(guardarMuestra);
+$('listaMuestras').onclick = e=>{ const b=e.target.closest('tr[data-mid]'); if(b && b.dataset.mid) abrirEdicion('muestra', b.dataset.mid); };
+document.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{ rango(b.dataset.r); $('btnBuscar').click(); });
+$('btnBuscar').onclick = ()=>ocupado($('btnBuscar'), buscar);
+$('resHist').onclick = e=>{ const tr=e.target.closest('tr[data-f]'); if(!tr) return; cambiarFecha(tr.dataset.f); ir('dia'); };
+$('btnPin').onclick = ()=>{ PIN=$('pinIn').value; DB.set('pin',PIN); arrancar(); };
+$('estado').onclick = abrirCola;
+$('btnSync').onclick = ()=>ocupado($('btnSync'), async()=>{ await sincronizar(true); abrirCola(); });
+$('btnColaCerrar').onclick = ()=>$('ovCola').classList.remove('on');
+$('ovCola').onclick = e=>{
+  if(e.target.id==='ovCola') return $('ovCola').classList.remove('on');
+  const r = e.target.closest('[data-reint]'), d = e.target.closest('[data-desc]');
+  if(r){ const o=S.cola.find(x=>x.opId===r.dataset.reint); if(o) delete o.error; guardarCola(); render(); sincronizar().then(abrirCola); }
+  if(d && confirm('¿Descartar este registro? No se enviará al servidor.')){
+    const o=S.cola.find(x=>x.opId===d.dataset.desc);
+    S.cola = S.cola.filter(x=>x!==o && !(o && (o.op==='lectura'||o.op==='muestra') && x.id===o.id));
+    guardarCola(); render(); abrirCola();
+  }
+};
+window.addEventListener('online', ()=>{ S.online = true; sincronizar(); refrescarServidor(); });
+window.addEventListener('offline', ()=>setOnline(false));
+document.addEventListener('visibilitychange', ()=>{ if(!document.hidden && S.cfg) sincronizar(); });
+if(DEMO) $('simCorte').onchange = ()=>{ if($('simCorte').checked) setOnline(false); else { S.online=true; sincronizar(); refrescarServidor(); } };
+
+/* App instalable: guarda la página en el equipo para abrir sin internet */
+if(!GAS && 'serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(()=>{});
+
+/* ================= modo vista previa (sin servidor) ================= */
+const MOCK = DEMO ? (()=>{
+  let seed=11; const rnd=()=>(seed=(seed*9301+49297)%233280)/233280;
+  const L=[], Mu=[], Inf={}, cam={}; let rde=199, idc=1;
+  const nombres=['MIGUEL BARBOSA','ADINEI VIEIRA','JOSE BENITEZ','CARLOS GIMENEZ','RAMON ACOSTA','LUIS FRANCO','PEDRO RUIZ','JUAN GAONA','DIEGO ROJAS','MARCOS SOUZA','ANDRES CABRAL','HUGO MARTINEZ','RICARDO SILVA','FABIO LOPES','OSCAR VERA'];
+  const letras='ABCDEFGHJKLMNPRSTUVXYZ';
+  const flota=Array.from({length:120},(_,i)=>{ const p=Array.from({length:3},()=>letras[Math.floor(rnd()*letras.length)]).join('')+String(100+Math.floor(rnd()*899)); return {p, c:nombres[i%nombres.length]}; });
+  flota[0]={p:'CBE977',c:'MIGUEL BARBOSA'}; flota[1]={p:'MEES017',c:'ADINEI VIEIRA'};
+  const hm = m => pad(Math.floor(m/60))+':'+pad(m%60);
+  const add=(f,hora,c,h,t,insp,id,reg)=>{ L.push({id:id||String(idc++),fecha:f,hora,patente:c.p,chofer:c.c,viaje:0,h,t,inspector:insp,obs:'',estado:'ACTIVO',reg:reg||(f+' 00:00:00')}); cam[c.p]=c.c; };
+  for(let k=30;k>=0;k--){
+    const d=new Date(); d.setDate(d.getDate()-k); if(d.getDay()===0) continue; const f=isoLocal(d);
+    const nCam = k===0 ? 34 : 20+Math.floor(rnd()*70); const ev=[];
+    for(let i=0;i<nCam;i++){ const c=flota[i]; const viajes = rnd()<.12 ? 6+Math.floor(rnd()*2) : 1+Math.floor(rnd()*4);
+      let m=360+Math.floor(rnd()*240); for(let v=0;v<viajes;v++){ ev.push({m,c}); m+=55+Math.floor(rnd()*60); } }
+    ev.sort((a,b)=>a.m-b.m).forEach(e=>{ if(e.m<1200) add(f,hm(e.m),e.c,Math.round((10.3+rnd()*2.6)*10)/10,Math.round((21+rnd()*3.5)*10)/10, rnd()<.5?'Fatima Rojas':'Inspector 2'); });
+    if(k>0 && k<25){ Inf[f]={rde:String(rde-k),carpeta:'#',planilla:'#',pdf:'#',hojas:Math.ceil(nCam/25),generado:f+' 18:40',pendiente:false};
+      const ps=[...new Set(L.filter(x=>x.fecha===f).map(x=>x.patente))];
+      for(let s=0;s<Math.ceil(ps.length/10);s++){ const p=ps[s*10]; const r=L.find(x=>x.fecha===f&&x.patente===p);
+        Mu.push({id:String(idc++),fecha:f,n:s+1,patente:p,ref:r.h,h:Math.round((r.h+(rnd()-.4)*.6)*100)/100,gi:6.81,gf:6.04,tiempo:'0:27',inspector:'Fatima Rojas',obs:'',estado:'ACTIVO'}); } }
+  }
+  const renum = f => { const c={}; L.filter(x=>x.fecha===f&&x.estado!=='ANULADO').sort((a,b)=>a.hora.localeCompare(b.hora)).forEach(x=>{ x.viaje=c[x.patente]=(c[x.patente]||0)+1; }); };
+  [...new Set(L.map(x=>x.fecha))].forEach(renum);
+  const dia = f => ({ fecha:f, lecturas:L.filter(x=>x.fecha===f).sort((a,b)=>a.hora.localeCompare(b.hora)),
+    muestras:Mu.filter(x=>x.fecha===f).sort((a,b)=>a.n-b.n), informe:Inf[f]||null });
+  return {
+    init:()=>({ hoy:isoLocal(new Date()), base:12.5, porMuestra:10, filasHoja:25, viajesFila:5, maxMuestras:15,
+      inspectores:['Fatima Rojas','Inspector 2'], camiones:Object.keys(cam).map(p=>({p,c:cam[p]})) }),
+    getDia:(pin,f)=>dia(f),
+    sync:(pin,ops)=>({ servidor:'', resultados: ops.map(op=>{
+      try{
+        if(op.op==='lectura'){ if(!L.some(x=>x.id===op.id)) add(op.fecha,op.hora,{p:op.patente,c:op.chofer},op.h,op.t,op.inspector,op.id,op.creado); }
+        else if(op.op==='muestra'){ if(!Mu.some(x=>x.id===op.id)){ const n=Mu.filter(x=>x.fecha===op.fecha).length+1;
+          Mu.push({id:op.id,fecha:op.fecha,n,patente:op.patente,ref:op.ref,h:op.h,gi:op.gi,gf:op.gf,tiempo:op.tiempo,inspector:op.inspector,obs:'',estado:'ACTIVO'}); } }
+        else { const r=(op.tipo==='muestra'?Mu:L).find(x=>x.id===op.id); if(!r) throw new Error('Registro no encontrado.');
+          if(op.op==='anular') r.estado='ANULADO'; else Object.assign(r, op.datos); }
+        renum(op.fecha); if(Inf[op.fecha]) Inf[op.fecha].pendiente=true;
+        return {opId:op.opId, ok:true};
+      }catch(e){ return {opId:op.opId, ok:false, error:e.message}; } }) }),
+    getHistorial:(pin,a,b,p)=>{ p=pat(p); const X=L.filter(x=>x.estado!=='ANULADO'&&x.fecha>=a&&x.fecha<=b&&(!p||x.patente.includes(p)));
+      const g={}; X.forEach(x=>{ const d=g[x.fecha]||(g[x.fecha]={fecha:x.fecha,s:new Set(),viajes:0,sh:0,st:0,alertas:0}); d.s.add(x.patente); d.viajes++; d.sh+=x.h; d.st+=x.t; if(x.h>12.5) d.alertas++; });
+      return { dias:Object.values(g).sort((x,y)=>y.fecha.localeCompare(x.fecha)).map(d=>({fecha:d.fecha,camiones:d.s.size,viajes:d.viajes,hProm:d.sh/d.viajes,tProm:d.st/d.viajes,alertas:d.alertas,
+        muestras:Mu.filter(m=>m.fecha===d.fecha&&m.estado!=='ANULADO').length, informe:Inf[d.fecha]||null})),
+        lecturas: p ? X.sort((x,y)=>(y.fecha+y.hora).localeCompare(x.fecha+x.hora)).slice(0,500) : [] }; },
+    generarInforme:(pin,f)=>{ const fl=armarFilas(L.filter(x=>x.fecha===f&&x.estado!=='ANULADO'));
+      const I=Inf[f]||(Inf[f]={rde:String(++rde),carpeta:'#',planilla:'#'});
+      Object.assign(I,{pdf:'',hojas:Math.max(1,Math.ceil(fl.length/25)),generado:f+' '+ahoraHM(),pendiente:false});
+      const p=f.split('-'); return { dia:dia(f), partes:[], nombre:`${I.rde}-Control de Humedad y Temp. Camiones - Harina de Soja ${p[2]}-${p[1]}-${p[0]}` }; },
+    guardarPdf:(pin,f)=>{ Inf[f].pdf='#'; return dia(f); }
+  };
+})() : null;
+
+window.addEventListener('error', e => toast('Error: ' + (e.message || 'desconocido'), true));
+window.addEventListener('unhandledrejection', e => toast('Error: ' + ((e.reason && e.reason.message) || e.reason), true));
+arrancar().catch(e => toast('Error al iniciar: ' + (e.message || e), true));
+</script>
+</body>
+</html>
