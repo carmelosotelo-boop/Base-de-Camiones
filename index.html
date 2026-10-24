@@ -126,6 +126,11 @@ body.ancho main,body.ancho header .top,body.ancho .datebox,body.ancho .estado{ma
 .dest input{width:auto}
 details summary{cursor:pointer;font-weight:600;font-size:14px;color:var(--brand);margin:12px 0 8px}
 textarea{resize:vertical}
+.fotos{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.foto{position:relative}
+.foto img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:10px;display:block;border:1px solid var(--line)}
+.foto button{position:absolute;top:4px;right:4px;width:26px;height:26px;border-radius:50%;border:0;background:rgba(0,0,0,.6);color:#fff;font-weight:700;cursor:pointer}
+a.btn{text-decoration:none}
 .estado{display:flex;align-items:center;gap:8px;max-width:760px;margin:8px auto 0;border:0;width:100%;border-radius:10px;padding:8px 10px;font:600 13px/1.25 inherit;text-align:left;cursor:pointer;background:rgba(255,255,255,.14);color:#fff}
 .estado .dot{width:9px;height:9px;border-radius:50%;flex:none;background:#5be08f}
 .estado.off{background:#f6c34a;color:#3a2a00}.estado.off .dot{background:#9a5b00}
@@ -310,9 +315,29 @@ textarea{resize:vertical}
 </div></nav>
 
 <div id="toast"></div>
+<div class="ov sheet" id="ovAviso"><div class="card">
+  <h2>Avisar novedad por correo</h2>
+  <div class="gen" id="avDatos" style="margin-bottom:12px"></div>
+  <label>Fotos del momento <small style="font-weight:500">(opcional, hasta 6)</small></label>
+  <div class="btns" style="margin:0 0 8px"><label class="btn ghost" for="avCam">📷 Sacar foto</label><label class="btn ghost" for="avGal">🖼 Galería</label></div>
+  <input type="file" id="avCam" accept="image/*" capture="environment" hidden>
+  <input type="file" id="avGal" accept="image/*" multiple hidden>
+  <div class="fotos" id="avFotos"></div>
+  <label style="margin-top:12px">Destinatarios</label>
+  <div id="avDest"></div>
+  <div class="f" style="margin-top:12px">
+    <label for="avOtros">Agregar otros correos (separados por coma)</label>
+    <input id="avOtros" type="email" multiple autocomplete="email" placeholder="persona@empresa.com">
+  </div>
+  <label class="dest" style="border:0;padding:0 0 10px"><input type="checkbox" id="avGuardar"> Guardar los nuevos como predeterminados para avisos</label>
+  <div class="f"><label for="avNota">Mensaje (opcional)</label><textarea id="avNota" rows="3" placeholder="Ej.: se detectó al calar el camión, se informó al encargado."></textarea></div>
+  <button class="btn" id="avEnviar">Enviar aviso</button>
+  <div style="margin-top:10px"><button class="btn ghost" id="avCerrar">Ahora no</button></div>
+</div></div>
 <div class="ov sheet" id="ovMail"><div class="card">
   <h2 id="mailTitulo">Enviar por correo</h2>
   <div class="hint" id="mailAsunto" style="margin:-6px 0 8px"></div>
+  <a class="btn ghost" id="mailVerPdf" target="_blank" rel="noopener" style="margin-bottom:14px">👁 Ver PDF generado</a>
   <label>Destinatarios predeterminados</label>
   <div id="mailDest"></div>
   <div class="f" style="margin-top:12px">
@@ -357,7 +382,7 @@ textarea{resize:vertical}
    API_URL: solo para la app instalable (GitHub Pages). Pegar la URL /exec
    de la implementación de Apps Script. Dentro de Apps Script se ignora.
    ===================================================================== */
-const API_URL = 'https://script.google.com/macros/s/AKfycbw_HG0V928PLk9SZDk4pZJjoEkGFH3RTWf-Cqo3Aoe11Wp_kI2N6RxHea9vnCp5mnzRtQ/exec';
+const API_URL = '';
 
 /* ================= modo de funcionamiento ================= */
 const $ = id => document.getElementById(id);
@@ -630,6 +655,7 @@ function guardar(){
   if(c){ if(d.chofer) c.c=d.chofer; } else { S.cfg.camiones.push({p:d.patente,c:d.chofer}); llenarCamiones(); }
   DB.set('cfg', S.cfg);
   encolar(d); resetForm();
+  if(d.anomalia || d.h > S.cfg.base) setTimeout(()=>abrirAviso(d), 400);
   toast(`Guardado · ${d.patente} viaje ${v}${d.h>S.cfg.base?' · SUPERA BASE':''}${d.anomalia?' · '+d.anomalia:''}${S.online?'':' · sin conexión, queda pendiente'}`, d.h>S.cfg.base || !!d.anomalia);
   $('patente').focus();
 }
@@ -663,7 +689,8 @@ function renderDia(){
       <div class="n" style="background:var(--bad-bg);color:var(--bad)">!</div>
       <div class="main"><b>${esc(r.patente)}</b> <small>${esc(r.hora)} · ${esc(r.chofer)} · viaje ${r.viaje}${r.obs?' · '+esc(r.obs):''}</small>
         <div class="trips"><span class="trip bad">${esc(etiquetaNov(r))}</span></div></div>
-      <span class="pill ${r.h>S.cfg.base?'bad':''}">${n1(r.h)} %</span></div>`).join('')
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px"><span class="pill ${r.h>S.cfg.base?'bad':''}">${n1(r.h)} %</span>
+      ${S.online?`<button class="btn sm ghost" data-aviso="${esc(r.id)}">✉ Avisar</button>`:''}</div></div>`).join('')
     : `<div class="hint">Sin novedades: ningún camión con anomalías ni humedad sobre ${n1(S.cfg.base)} %.</div>`;
   $('lblHojas').textContent = `· ${filas.length} filas en ${hojas} hoja(s) de ${S.cfg.filasHoja}`;
   renderTabla(filas);
@@ -754,6 +781,8 @@ function abrirMail(tipo, clave, asunto){
   const def = (S.cfg.correos && S.cfg.correos[tipo]) || [];
   $('mailTitulo').textContent = tipo==='Mensual' ? 'Enviar resumen mensual' : 'Enviar informe del día';
   $('mailAsunto').textContent = asunto || '';
+  const pdf = tipo==='Mensual' ? (S.mes && S.mes.resumen && S.mes.resumen.pdf) : (S.dia.informe && S.dia.informe.pdf);
+  $('mailVerPdf').style.display = pdf ? '' : 'none'; if(pdf) $('mailVerPdf').href = pdf;
   $('mailDest').innerHTML = def.length ? def.map(c=>`<label class="dest"><input type="checkbox" value="${esc(c)}" checked> ${esc(c)}</label>`).join('')
     : '<div class="hint">No hay correos predeterminados. Agregue uno abajo y marque "Guardar como predeterminado".</div>';
   $('mailOtros').value=''; $('mailNota').value=''; $('mailGuardar').checked = !def.length;
@@ -769,6 +798,55 @@ async function enviarMail(){
   S.cfg.correos = r.correos; DB.set('cfg', S.cfg);
   $('ovMail').classList.remove('on');
   toast(`Enviado a ${r.enviados} destinatario(s)`);
+}
+
+/* ================= AVISO DE NOVEDAD CON FOTOS ================= */
+function abrirAviso(r){
+  if(!S.online){ toast('Sin conexión: puede enviar el aviso al reconectar, desde "Novedades del día".', true); return; }
+  S.aviso = { datos:{ fecha:r.fecha||S.fecha, hora:r.hora, patente:r.patente, chofer:r.chofer, h:r.h, t:r.t, anomalia:r.anomalia||'', obs:r.obs||'' }, fotos:[] };
+  const d = S.aviso.datos, sobre = d.h > S.cfg.base;
+  $('avDatos').innerHTML = `<div class="hd"><b>${esc(d.patente)} · ${esc(d.chofer||'')}</b><span class="pill ${sobre?'bad':''}">${n1(d.h)} %</span></div>
+    <div class="hint">${d.fecha.split('-').reverse().join('/')} ${esc(d.hora)} · ${n1(d.t)} °C</div>
+    <div class="trips"><span class="trip bad">${esc([sobre?'Humedad sobre la base':'', d.anomalia].filter(Boolean).join(' · ') || 'Novedad')}</span>${d.obs?`<span class="trip">${esc(d.obs)}</span>`:''}</div>`;
+  const def = (S.cfg.correos && (S.cfg.correos.Alertas.length ? S.cfg.correos.Alertas : S.cfg.correos.Diario)) || [];
+  $('avDest').innerHTML = def.length ? def.map(c=>`<label class="dest"><input type="checkbox" value="${esc(c)}" checked> ${esc(c)}</label>`).join('')
+    : '<div class="hint">No hay correos predeterminados para avisos. Agregue uno abajo.</div>';
+  $('avOtros').value=''; $('avNota').value=''; $('avGuardar').checked = !def.length;
+  pintarFotos(); $('ovAviso').classList.add('on');
+}
+function pintarFotos(){
+  $('avFotos').innerHTML = S.aviso.fotos.map((f,i)=>`<div class="foto"><img src="${f.b64}" alt="foto ${i+1}"><button data-quitar="${i}" aria-label="Quitar">✕</button></div>`).join('');
+}
+/** Achica la foto del celular (máx. 1600 px, JPEG) para enviarla rápido aun con señal débil. */
+function comprimir(file){
+  return new Promise((ok,ko)=>{
+    const url = URL.createObjectURL(file), img = new Image();
+    img.onload = ()=>{ const k = Math.min(1, 1600/Math.max(img.width, img.height)), c = document.createElement('canvas');
+      c.width = Math.round(img.width*k); c.height = Math.round(img.height*k);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(url); ok(c.toDataURL('image/jpeg', 0.8)); };
+    img.onerror = ()=>{ URL.revokeObjectURL(url); ko(new Error('No se pudo leer la imagen ' + file.name)); };
+    img.src = url;
+  });
+}
+async function agregarFotos(input){
+  const files = [...input.files]; input.value = '';
+  for(const f of files){
+    if(S.aviso.fotos.length >= 6){ toast('Máximo 6 fotos por aviso.', true); break; }
+    try{ S.aviso.fotos.push({ nombre:f.name, tipo:'image/jpeg', b64: await comprimir(f) }); }catch(e){ toast(e.message, true); }
+  }
+  pintarFotos();
+}
+async function enviarAvisoUI(){
+  const a = S.aviso; if(!a) return;
+  const otros = $('avOtros').value.split(/[,;\s]+/).map(x=>x.trim()).filter(Boolean);
+  const para = [...$('avDest').querySelectorAll('input:checked')].map(i=>i.value).concat(otros);
+  if(!para.length) throw new Error('Elija o escriba al menos un destinatario.');
+  const malo = otros.find(x=>!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(x)); if(malo) throw new Error('Correo inválido: '+malo);
+  const r = await api('enviarAviso', { datos:a.datos, para, nota:$('avNota').value.trim(), usuario:$('inspector').value,
+    guardar:$('avGuardar').checked && otros.length>0, fotos:a.fotos.map(f=>({nombre:f.nombre, tipo:f.tipo, b64:f.b64})) });
+  S.cfg.correos = r.correos; DB.set('cfg', S.cfg);
+  $('ovAviso').classList.remove('on'); S.aviso = null;
+  toast(`Aviso enviado a ${r.enviados} destinatario(s)${r.fotos?` con ${r.fotos} foto(s)`:''}`);
 }
 
 /* ================= RESUMEN MENSUAL ================= */
@@ -1087,7 +1165,15 @@ $('btnBuscar').onclick = ()=>ocupado($('btnBuscar'), buscar);
 $('resHist').onclick = e=>{ const tr=e.target.closest('tr[data-f]'); if(!tr) return; cambiarFecha(tr.dataset.f); ir('dia'); };
 $('anoms').onclick = e=>{ const b=e.target.closest('.chip'); if(b) b.classList.toggle('on'); };
 $('edCampos').addEventListener('click', e=>{ const b=e.target.closest('#e_anoms .chip'); if(b) b.classList.toggle('on'); });
-$('novDia').onclick = e=>{ const it=e.target.closest('.item[data-id]'); if(it) abrirEdicion('lectura', it.dataset.id); };
+$('novDia').onclick = e=>{
+  const av = e.target.closest('[data-aviso]');
+  if(av){ const r = S.dia.lecturas.find(x=>x.id===av.dataset.aviso); if(r) abrirAviso(r); return; }
+  const it = e.target.closest('.item[data-id]'); if(it) abrirEdicion('lectura', it.dataset.id); };
+$('avCam').onchange = e=>agregarFotos(e.target);
+$('avGal').onchange = e=>agregarFotos(e.target);
+$('avFotos').onclick = e=>{ const b=e.target.closest('[data-quitar]'); if(b){ S.aviso.fotos.splice(+b.dataset.quitar,1); pintarFotos(); } };
+$('avEnviar').onclick = ()=>ocupado($('avEnviar'), enviarAvisoUI);
+$('avCerrar').onclick = ()=>{ $('ovAviso').classList.remove('on'); S.aviso=null; };
 document.addEventListener('click', e=>{ const b=e.target.closest('[data-mail]'); if(!b) return;
   if(b.dataset.mail==='Mensual') abrirMail('Mensual', S.mes.mes, nombreResumen(S.mes.mes));
   else abrirMail('Diario', S.fecha, nombreInforme(S.dia.informe && S.dia.informe.rde)); });
@@ -1137,7 +1223,7 @@ if(!GAS && 'serviceWorker' in navigator && location.protocol === 'https:') navig
 const MOCK = DEMO ? (()=>{
   let seed=11; const rnd=()=>(seed=(seed*9301+49297)%233280)/233280;
   const L=[], Mu=[], Inf={}, cam={}, Dias={}, Res={}; let rde=199, idc=1;
-  const CORREOS={ Diario:['operaciones@control-ar.com.py','calidad.ots@cliente.com'], Mensual:['operaciones@control-ar.com.py'] };
+  const CORREOS={ Diario:['operaciones@control-ar.com.py','calidad.ots@cliente.com'], Mensual:['operaciones@control-ar.com.py'], Alertas:['calidad@control-ar.com.py'] };
   const nombres=['MIGUEL BARBOSA','ADINEI VIEIRA','JOSE BENITEZ','CARLOS GIMENEZ','RAMON ACOSTA','LUIS FRANCO','PEDRO RUIZ','JUAN GAONA','DIEGO ROJAS','MARCOS SOUZA','ANDRES CABRAL','HUGO MARTINEZ','RICARDO SILVA','FABIO LOPES','OSCAR VERA'];
   const letras='ABCDEFGHJKLMNPRSTUVXYZ';
   const flota=Array.from({length:120},(_,i)=>{ const p=Array.from({length:3},()=>letras[Math.floor(rnd()*letras.length)]).join('')+String(100+Math.floor(rnd()*899)); return {p, c:nombres[i%nombres.length]}; });
@@ -1178,7 +1264,7 @@ const MOCK = DEMO ? (()=>{
     muestras:Mu.filter(x=>x.fecha===f).sort((a,b)=>a.n-b.n), informe:Inf[f]||null });
   return {
     init:()=>({ hoy:isoLocal(new Date()), base:12.5, porMuestra:10, filasHoja:25, viajesFila:5, maxMuestras:15,
-      anomalias:ANOM_DEF, correos:{ Diario:[...CORREOS.Diario], Mensual:[...CORREOS.Mensual], Alertas:['calidad@control-ar.com.py'] },
+      anomalias:ANOM_DEF, correos:{ Diario:[...CORREOS.Diario], Mensual:[...CORREOS.Mensual], Alertas:[...CORREOS.Alertas] },
       inspectores:['Fatima Rojas','Inspector 2'], camiones:Object.keys(cam).map(p=>({p,c:cam[p]})) }),
     getDia:(pin,f)=>dia(f),
     sync:(pin,ops)=>({ servidor:'', resultados: ops.map(op=>{
@@ -1204,8 +1290,10 @@ const MOCK = DEMO ? (()=>{
     getMes:(pin,mes)=>mesM(mes),
     guardarMes:(pin,mes,filas)=>{ filas.forEach(x=>Dias[x.fecha]=Object.assign({},x)); return mesM(mes); },
     generarResumen:(pin,mes)=>{ Res[mes]={carpeta:'#',planilla:'#',excel:'#',pdf:'#',generado:ahoraTxt()}; return mesM(mes); },
+    enviarAviso:(pin,o)=>{ if(o.guardar) o.para.forEach(c=>{ if(!CORREOS.Alertas.includes(c)) CORREOS.Alertas.push(c); });
+      return { enviados:o.para.length, fotos:(o.fotos||[]).length, correos:{ Diario:[...CORREOS.Diario], Mensual:[...CORREOS.Mensual], Alertas:[...CORREOS.Alertas] } }; },
     enviarCorreo:(pin,o)=>{ if(o.guardar) o.para.forEach(c=>{ if(!CORREOS[o.tipo].includes(c)) CORREOS[o.tipo].push(c); });
-      return { enviados:o.para.length, asunto:'', correos:{ Diario:[...CORREOS.Diario], Mensual:[...CORREOS.Mensual], Alertas:['calidad@control-ar.com.py'] } }; }
+      return { enviados:o.para.length, asunto:'', correos:{ Diario:[...CORREOS.Diario], Mensual:[...CORREOS.Mensual], Alertas:[...CORREOS.Alertas] } }; }
   };
 })() : null;
 
