@@ -1,6 +1,6 @@
 /* Guarda la app en el equipo para que abra sin internet.
    Al publicar una versión nueva de index.html, cambiar el número de VERSION. */
-const VERSION = 'humedad-v6';
+const VERSION = 'humedad-v8';
 const ARCHIVOS = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png',
   'https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js'];
 
