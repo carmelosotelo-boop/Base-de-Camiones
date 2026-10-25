@@ -301,8 +301,16 @@ a.btn{text-decoration:none}
       </div>
       <div class="f"><label for="hPat">Patente (opcional)</label><input id="hPat" autocomplete="off" placeholder="Todas"></div>
       <button class="btn" id="btnBuscar">Buscar</button>
+      <button class="btn ghost" data-excel="periodo" style="margin-top:8px">⬇ Exportar Excel del período</button>
     </div>
     <div id="resHist"></div>
+    <div class="card">
+      <h2>Importar informes anteriores <small>Excel FO0167 + FO0104</small></h2>
+      <div class="hint" style="margin:-4px 0 10px">Elija los Excel de los informes ya hechos (ej.: <i>199-Control de Humedad y Temp. Camiones - Harina de Soja 22-10-2026.xlsx</i>). Puede elegir también los PDF con el mismo nombre para guardarlos en Drive. Importar dos veces el mismo archivo no duplica datos.</div>
+      <label class="btn ghost" for="impArch">📂 Elegir archivos Excel / PDF</label>
+      <input type="file" id="impArch" multiple accept=".xlsx,.xlsm,.xls,.pdf" hidden>
+      <div id="impPrev" style="margin-top:12px"></div>
+    </div>
   </section>
 </main>
 
@@ -315,6 +323,12 @@ a.btn{text-decoration:none}
 </div></nav>
 
 <div id="toast"></div>
+<div class="ov" id="ovDesc"><div class="card">
+  <h2>Excel listo</h2>
+  <div class="hint" id="descNombre" style="margin:-6px 0 12px;word-break:break-word"></div>
+  <a class="btn" id="descLink" target="_blank" rel="noopener">⬇ Descargar</a>
+  <div class="btns"><a class="btn ghost" id="descDrive" target="_blank" rel="noopener">Ver en Drive</a><button class="btn ghost" id="descCerrar">Cerrar</button></div>
+</div></div>
 <div class="ov sheet" id="ovAviso"><div class="card">
   <h2>Avisar novedad por correo</h2>
   <div class="gen" id="avDatos" style="margin-bottom:12px"></div>
@@ -344,7 +358,8 @@ a.btn{text-decoration:none}
     <label for="mailOtros">Agregar otros correos (separados por coma)</label>
     <input id="mailOtros" type="email" multiple autocomplete="email" placeholder="persona@empresa.com">
   </div>
-  <label class="dest" style="border:0;padding:0 0 10px"><input type="checkbox" id="mailGuardar"> Guardar los nuevos como predeterminados</label>
+  <label class="dest" style="border:0;padding:0 0 4px"><input type="checkbox" id="mailGuardar"> Guardar los nuevos como predeterminados</label>
+  <label class="dest" style="border:0;padding:0 0 10px"><input type="checkbox" id="mailExcel"> Adjuntar también en Excel <small style="color:var(--muted)">(se genera en el momento)</small></label>
   <div class="f"><label for="mailNota">Mensaje (opcional)</label><textarea id="mailNota" rows="3"></textarea></div>
   <button class="btn" id="mailEnviar">Enviar</button>
   <div style="margin-top:10px"><button class="btn ghost" id="mailCerrar">Cancelar</button></div>
@@ -735,9 +750,10 @@ function bloqueInforme(){
     <div class="hint">Pág. 1: Informe FO0167 (${nMu} muestra${nMu===1?'':'s'}) · Pág. 2${hojas>1?'–'+(hojas+1):''}: FO0104 (${filas.length} filas, ${hojas} hoja${hojas>1?'s':''})${x&&x.generado?` · generado ${esc(x.generado)}`:''}</div>
     ${!x ? '<div class="hint">Se asignará el siguiente N° R.D.E.</div>' : ''}
     ${nMu<sug && L.length ? `<div class="hint bad">Faltan muestras: ${nMu} de ${sug} sugeridas.</div>` : ''}
-    ${x&&x.planilla?`<div class="links">${x.pdf?`<a href="${esc(x.pdf)}" target="_blank">Abrir PDF</a>`:''}<a href="${esc(x.planilla)}" target="_blank">Planilla</a><a href="${esc(x.carpeta)}" target="_blank">Carpeta del mes</a></div>`:''}
+    ${x&&(x.pdf||x.carpeta)?`<div class="links">${x.pdf?`<a href="${esc(x.pdf)}" target="_blank">Abrir PDF</a>`:''}${x.planilla?`<a href="${esc(x.planilla)}" target="_blank">Planilla</a>`:''}<a href="${esc(x.carpeta)}" target="_blank">Carpeta del mes</a></div>`:''}
     <button class="btn ${x&&!x.pendiente&&x.pdf?'ghost':''}" data-gen="1" ${bloqueo?'disabled':''}>${x?'Regenerar informe':'Generar informe'}</button>
     ${x&&x.pdf&&!x.pendiente&&S.online ? `<button class="btn" data-mail="Diario" style="margin-top:8px">✉ Enviar por correo</button>` : ''}
+    ${L.length&&S.online&&!pend ? `<button class="btn ghost" data-excel="dia" style="margin-top:8px">⬇ Excel con los registros del día</button>` : ''}
     ${bloqueo?`<div class="hint ${!S.online||pend?'bad':''}">${bloqueo}</div>`:''}
   </div>`;
 }
@@ -785,7 +801,7 @@ function abrirMail(tipo, clave, asunto){
   $('mailVerPdf').style.display = pdf ? '' : 'none'; if(pdf) $('mailVerPdf').href = pdf;
   $('mailDest').innerHTML = def.length ? def.map(c=>`<label class="dest"><input type="checkbox" value="${esc(c)}" checked> ${esc(c)}</label>`).join('')
     : '<div class="hint">No hay correos predeterminados. Agregue uno abajo y marque "Guardar como predeterminado".</div>';
-  $('mailOtros').value=''; $('mailNota').value=''; $('mailGuardar').checked = !def.length;
+  $('mailOtros').value=''; $('mailNota').value=''; $('mailGuardar').checked = !def.length; $('mailExcel').checked = false;
   $('ovMail').classList.add('on');
 }
 async function enviarMail(){
@@ -794,10 +810,179 @@ async function enviarMail(){
   const para = [...$('mailDest').querySelectorAll('input:checked')].map(i=>i.value).concat(otros);
   if(!para.length) throw new Error('Elija o escriba al menos un destinatario.');
   const malo = otros.find(x=>!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(x)); if(malo) throw new Error('Correo inválido: '+malo);
-  const r = await api('enviarCorreo', { tipo:m.tipo, clave:m.clave, para, nota:$('mailNota').value.trim(), usuario:$('inspector').value, guardar:$('mailGuardar').checked && otros.length>0 });
+  const r = await api('enviarCorreo', { tipo:m.tipo, clave:m.clave, para, nota:$('mailNota').value.trim(), usuario:$('inspector').value, guardar:$('mailGuardar').checked && otros.length>0, excel:$('mailExcel').checked });
   S.cfg.correos = r.correos; DB.set('cfg', S.cfg);
   $('ovMail').classList.remove('on');
   toast(`Enviado a ${r.enviados} destinatario(s)`);
+}
+
+/* ================= EXCEL A PEDIDO ================= */
+async function exportarExcelUI(tipo){
+  if(!S.online) throw new Error('Exportar a Excel requiere conexión.');
+  let o;
+  if(tipo==='dia') o = { tipo:'registros', desde:S.fecha, hasta:S.fecha };
+  else if(tipo==='mesreg'){ const m=S.mes.mes, nd=new Date(+m.slice(0,4), +m.slice(5,7), 0).getDate(); o = { tipo:'registros', desde:m+'-01', hasta:`${m}-${nd}` }; }
+  else if(tipo==='resumen'){ if(Object.keys(S.mesEd).length) await guardarMesUI(); o = { tipo:'resumen', mes:S.mes.mes }; }
+  else { if(!$('hDesde').value || !$('hHasta').value) throw new Error('Elija el período (desde / hasta).'); o = { tipo:'registros', desde:$('hDesde').value, hasta:$('hHasta').value }; }
+  const r = await api('exportarExcel', o);
+  if(tipo==='resumen' && S.mes && S.mes.resumen) S.mes.resumen.excel = r.url;
+  $('descNombre').textContent = r.nombre; $('descLink').href = r.descarga; $('descDrive').href = r.url;
+  $('ovDesc').classList.add('on');
+}
+
+/* ================= IMPORTAR INFORMES ANTERIORES ================= */
+let _xlsxLib = null;
+function cargarXlsx(){
+  if(window.XLSX) return Promise.resolve();
+  return _xlsxLib || (_xlsxLib = new Promise((ok,ko)=>{
+    const s=document.createElement('script'); s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    s.onload=()=>ok(); s.onerror=()=>{ _xlsxLib=null; ko(new Error('No se pudo cargar el lector de Excel (requiere conexión).')); };
+    document.head.appendChild(s);
+  }));
+}
+const txtC = v => String(v==null?'':v).replace(/\s+/g,' ').trim();
+const sinAcento = v => txtC(v).normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+/** Hora desde celda de Excel: número (fracción del día) o texto "14:21". */
+function horaC(v){
+  if(typeof v === 'number' && isFinite(v)){ const m = Math.round((v % 1) * 1440) % 1440; return pad(Math.floor(m/60))+':'+pad(m%60); }
+  const m = txtC(v).match(/^(\d{1,2})[:.h](\d{2})/); return m && +m[1]<24 && +m[2]<60 ? pad(+m[1])+':'+m[2] : '';
+}
+function numC(v){ if(typeof v==='number') return v; const t=txtC(v).replace('%','').replace(',','.'); return t==='' ? NaN : Number(t); }
+function tiempoC(v){ if(typeof v==='number' && isFinite(v) && v<1){ const m=Math.round(v*1440); return Math.floor(m/60)+':'+pad(m%60); } return txtC(v); }
+function buscarC(rows, re, desde, hasta){
+  for(let r=desde||0; r<Math.min(rows.length, hasta==null?rows.length:hasta); r++)
+    for(let c=0; c<rows[r].length; c++) if(re.test(txtC(rows[r][c]))) return {r, c};
+  return null;
+}
+const valorDer = (rows, p) => { if(!p) return ''; const row = rows[p.r]; for(let c=p.c+1; c<row.length; c++) if(txtC(row[c])!=='') return row[c]; return ''; };
+function anomDe(obs){
+  const o = sinAcento(obs), out = [];
+  [['punto negro','Punto negro'],['insecto','Insecto vivo'],['olor','Olor extraño'],['material extra','Material extraño'],['caliente','Producto caliente'],['apelmaz','Apelmazado / grumos'],['grumo','Apelmazado / grumos']]
+    .forEach(([k,a])=>{ if(o.includes(k) && !out.includes(a)) out.push(a); });
+  return out.join('; ');
+}
+
+/** Lee un Excel de informe: fecha y R.D.E. (del nombre del archivo y de la hoja Informe), muestras y camiones. */
+function leerInforme(wb, archivo){
+  const av = [], rowsDe = n => XLSX.utils.sheet_to_json(wb.Sheets[n], { header:1, raw:true, defval:'' });
+  const mN = archivo.match(/^\s*(\d+)\s*-/), mF = archivo.match(/(\d{1,2})-(\d{1,2})-(\d{4})/);
+  let rde = mN ? +mN[1] : 0, fecha = mF ? `${mF[3]}-${pad(+mF[2])}-${pad(+mF[1])}` : '', analista = '';
+  const muestras = [], lecturas = [];
+  const nInf = wb.SheetNames.find(n => /^informe/i.test(n.trim()));
+  if(nInf){
+    const R = rowsDe(nInf);
+    const pR = buscarC(R, /R\.?\s?D\.?\s?E/i);
+    if(pR){ const m = txtC(R[pR.r][pR.c]).match(/R\.?\s?D\.?\s?E\.?\s*(\d+)/i) || txtC(valorDer(R,pR)).match(/(\d+)/);
+      if(m){ if(rde && +m[1]!==rde) av.push(`R.D.E. del archivo (${rde}) distinto al de la hoja (${m[1]}): se usa ${m[1]}.`); rde = +m[1]; } }
+    const fv = valorDer(R, buscarC(R, /^Fecha de ejecuci/i));
+    if(typeof fv === 'number' && fv > 30000){ const d = new Date(Date.UTC(1899,11,30) + Math.round(fv)*86400000);
+      const f2 = `${d.getUTCFullYear()}-${pad(d.getUTCMonth()+1)}-${pad(d.getUTCDate())}`;
+      if(fecha && f2!==fecha) av.push(`Fecha del nombre (${fecha.split('-').reverse().join('/')}) distinta a la de la hoja (${f2.split('-').reverse().join('/')}).`);
+      if(!fecha) fecha = f2; }
+    analista = txtC(valorDer(R, buscarC(R, /^Analista/i)));
+    const pM = buscarC(R, /^Muestras$/i);
+    if(pM){
+      const H = R[pM.r].map(sinAcento), ci = re => { const i = H.findIndex(x=>re.test(x)); return i<0 ? -1 : i; };
+      const c = { ref:ci(/^referencial/), h:ci(/^humedad/), gi:ci(/inicial/), gf:ci(/final/), ti:ci(/^tiempo/) };
+      for(let r = pM.r+1; r < Math.min(R.length, pM.r+1+15); r++){
+        const row = R[r];
+        if(/promedio/i.test(row.map(txtC).join(' '))) break;
+        const h = numC(row[c.h]); if(!(h>0 && h<40)) continue;
+        const fin = c.ref>pM.c ? c.ref : pM.c+1;
+        const pt = row.slice(pM.c, fin).map(txtC).join(' ').replace(/CAMION(ES)?/ig,'').trim();
+        muestras.push({ id:`imp-${fecha}-m${muestras.length+1}`, patente:pat(pt) || 'SIN PATENTE', ref:numC(row[c.ref]), h,
+          gi:numC(row[c.gi]), gf:numC(row[c.gf]), tiempo:tiempoC(row[c.ti]) });
+        if(!pat(pt)) av.push(`Muestra ${muestras.length} sin patente.`);
+      }
+    }
+  } else av.push('No se encontró la hoja "Informe" (FO0167).');
+
+  let hojas = 0, sinHora = 0;
+  wb.SheetNames.filter(n => /cami/i.test(n)).forEach((n, ih) => {
+    const R = rowsDe(n);
+    let hr = -1, hc = [];
+    for(let r=0; r<R.length && hr<0; r++){ const cs = []; R[r].forEach((x,c)=>{ if(/^hora$/i.test(txtC(x))) cs.push(c); }); if(cs.length>=5){ hr=r; hc=cs.slice(0,5); } }
+    if(hr<0){ av.push(`Hoja "${n}": no se encontraron las 5 columnas "Hora".`); return; }
+    const col = re => { const p = buscarC(R, re, Math.max(0,hr-4), hr+1); return p ? p.c : -1; };
+    const cP = col(/patente/i), cC = col(/^chofer$/i), cO = col(/^observaci/i);
+    if(cP<0){ av.push(`Hoja "${n}": no se encontró la columna Patente.`); return; }
+    let usada = false;
+    for(let r=hr+1; r<R.length; r++){
+      const row = R[r], linea = row.map(txtC).join(' ');
+      if(/promedio|pico/i.test(linea)) break;
+      const p = pat(row[cP]); if(!p) continue;
+      const obs = cO>=0 ? txtC(row[cO]).replace(/Continuaci[oó]n \(viajes \d+ a \d+\)\s*\|?\s*/i,'') : '';
+      let primero = true;
+      hc.forEach((c,j)=>{
+        const h = numC(row[c+1]), t = numC(row[c+2]); let hora = horaC(row[c]);
+        if(!(h>0 && h<40)) return;
+        if(!hora){ sinHora++; hora = '00:00'; }
+        lecturas.push({ id:`imp-${fecha}-${ih+1}-${r+1}-${j+1}`, hora, patente:p, chofer:txtC(cC>=0?row[cC]:'').toUpperCase(),
+          h, t: isFinite(t) ? t : NaN, obs: primero ? obs : '', anomalia: primero ? anomDe(obs) : '' });
+        primero = false; usada = true;
+      });
+    }
+    if(usada) hojas++;
+  });
+  if(sinHora) av.push(`${sinHora} viaje(s) sin hora: se cargan como 00:00.`);
+  if(lecturas.some(l=>!isFinite(l.t))) av.push('Hay viajes sin temperatura.');
+  if(!fecha) av.push('No se pudo determinar la fecha.');
+  if(!rde) av.push('No se encontró el N° R.D.E.');
+  return { archivo, fecha, rde, analista, hojas, muestras, lecturas, avisos:av,
+    camiones: new Set(lecturas.map(l=>l.patente)).size };
+}
+
+async function elegirImport(input){
+  const files = [...input.files]; input.value = '';
+  if(!files.length) return;
+  $('impPrev').innerHTML = '<div class="hint"><span class="spin" style="display:inline-block;width:14px;height:14px;vertical-align:-2px"></span> Leyendo archivos…</div>';
+  await cargarXlsx();
+  const pdfs = files.filter(f=>/\.pdf$/i.test(f.name)), dias = [];
+  for(const f of files.filter(f=>!/\.pdf$/i.test(f.name))){
+    try{ const d = leerInforme(XLSX.read(await f.arrayBuffer(), { type:'array', cellDates:false }), f.name);
+      d.pdfFile = pdfs.find(p => { const a=p.name.match(/^\s*(\d+)\s*-/), b=p.name.match(/(\d{1,2})-(\d{1,2})-(\d{4})/);
+        return (a && +a[1]===d.rde) || (b && `${b[3]}-${pad(+b[2])}-${pad(+b[1])}`===d.fecha); }) || null;
+      dias.push(d);
+    }catch(e){ dias.push({ archivo:f.name, error:e.message||String(e) }); }
+  }
+  dias.sort((a,b)=>(a.fecha||'').localeCompare(b.fecha||''));
+  let est = {};
+  try{ est = await api('estadoFechas', dias.filter(d=>d.fecha).map(d=>d.fecha)); }catch(e){ if(e.red) toast('Sin conexión: la importación requiere internet.', true); else toast(e.message, true); }
+  dias.forEach(d=>{ const e = est[d.fecha]; d.base = e; d.sel = !d.error && d.fecha && d.rde && (d.lecturas.length||d.muestras.length) && !(e && e.lecturas > e.importadas); });
+  S.imp = dias; pintarImport();
+}
+function pintarImport(){
+  const D = S.imp || [], n = D.filter(d=>d.sel).length;
+  $('impPrev').innerHTML = D.length ? `<div class="scroll"><table class="tbl" style="min-width:520px">
+    <tr><th></th><th>Informe</th><th class="r">Cam.</th><th class="r">Viajes</th><th class="r">Mtras</th><th>PDF</th><th>Estado</th></tr>
+    ${D.map((d,i)=> d.error ? `<tr><td></td><td colspan="6"><b>${esc(d.archivo)}</b><div class="hint bad">${esc(d.error)}</div></td></tr>` :
+      `<tr><td><input type="checkbox" data-imp="${i}" ${d.sel?'checked':''} style="width:auto"></td>
+      <td><b>R.D.E. ${d.rde||'?'}</b> · ${d.fecha?d.fecha.split('-').reverse().join('/'):'?'}<div class="hint" style="margin:0">${esc(d.analista||'')}${d.hojas?` · ${d.hojas} hoja(s) FO0104`:''}</div>
+        ${d.avisos.length?`<div class="hint bad" style="margin:0">${d.avisos.map(esc).join('<br>')}</div>`:''}</td>
+      <td class="r">${d.camiones}</td><td class="r">${d.lecturas.length}</td><td class="r">${d.muestras.length}</td>
+      <td>${d.pdfFile?'✓':'—'}</td>
+      <td>${d.res ? (d.res.ok ? `<span class="pill good">Importado</span>` : `<span class="pill bad">Error</span><div class="hint bad" style="margin:0">${esc(d.res.error)}</div>`)
+        : d.base && d.base.lecturas ? `<span class="pill amber">Ya hay ${d.base.lecturas} en la base${d.base.importadas===d.base.lecturas?' (importados)':''}</span>` : '<span class="pill">Nuevo</span>'}</td></tr>`).join('')}
+    </table></div>
+    <div class="hint">Los días que ya tienen registros cargados desde la app quedan sin marcar para no mezclar datos. Re-importar un archivo ya importado no duplica.</div>
+    <button class="btn" id="btnImportar" style="margin-top:10px" ${n&&S.online?'':'disabled'}>Importar ${n} día(s)</button>` : '';
+}
+async function importarSel(){
+  const D = (S.imp||[]).filter(d=>d.sel && !(d.res && d.res.ok)); let ok = 0, i = 0;
+  for(const d of D){
+    $('btnImportar').innerHTML = `<span class="spin"></span>&nbsp; ${++i} de ${D.length}…`;
+    try{
+      const pdf = d.pdfFile ? await new Promise((r,j)=>{ const fr=new FileReader(); fr.onload=()=>r(fr.result); fr.onerror=()=>j(new Error('No se pudo leer el PDF')); fr.readAsDataURL(d.pdfFile); }) : null;
+      const r = await api('importarDia', { fecha:d.fecha, rde:d.rde, analista:d.analista, origen:d.archivo, hojas:d.hojas, pdf,
+        lecturas:d.lecturas.map(l=>Object.assign({}, l, { t: isFinite(l.t) ? l.t : '' })), muestras:d.muestras });
+      d.res = { ok:true, r }; ok++;
+      if(r.errores.length) d.avisos.push(...r.errores.map(e=>'No importado: '+e));
+    }catch(e){ d.res = { ok:false, error:e.message||String(e) }; }
+    pintarImport();
+  }
+  toast(`${ok} de ${D.length} día(s) importados`, ok<D.length);
+  if(S.dias) { S.dias = {}; refrescarServidor(); }
+  S.mes = null;
 }
 
 /* ================= AVISO DE NOVEDAD CON FOTOS ================= */
@@ -893,9 +1078,11 @@ function renderMes(){
     <div class="hint">${act.length} días de recepción · ${m.dias.filter(d=>valMes(d,'despacho')).length} de despacho · ${m.novedades.length} novedad(es)${r?' · generado '+esc(r.generado):''}</div>
     <div class="hint">Portátil = ${m.portatil==='camiones'?'promedio de todas las lecturas del FO0104':'promedio del referencial de las muestras del FO0167'}.</div>
     ${cambios?`<div class="hint bad">Hay ${cambios} día(s) con cambios sin guardar.</div>`:''}
-    ${r?`<div class="links"><a href="${esc(r.pdf)}" target="_blank">PDF</a><a href="${esc(r.excel)}" target="_blank">Excel</a><a href="${esc(r.planilla)}" target="_blank">Planilla</a><a href="${esc(r.carpeta)}" target="_blank">Carpeta</a></div>`:''}
-    <button class="btn ${r?'ghost':''}" id="btnResumen" ${S.online?'':'disabled'}>${r?'Regenerar':'Generar'} Excel + PDF</button>
+    ${r?`<div class="links"><a href="${esc(r.pdf)}" target="_blank">Abrir PDF</a>${r.excel?`<a href="${esc(r.excel)}" target="_blank">Último Excel</a>`:''}${r.planilla?`<a href="${esc(r.planilla)}" target="_blank">Planilla</a>`:''}<a href="${esc(r.carpeta)}" target="_blank">Carpeta</a></div>`:''}
+    <button class="btn ${r?'ghost':''}" id="btnResumen" ${S.online?'':'disabled'}>${r?'Regenerar PDF':'Generar PDF'}</button>
     ${r&&S.online?`<button class="btn" data-mail="Mensual" style="margin-top:8px">✉ Enviar por correo</button>`:''}
+    ${S.online?`<div class="btns" style="margin-top:8px"><button class="btn ghost" data-excel="resumen">⬇ Excel resumen</button><button class="btn ghost" data-excel="mesreg">⬇ Excel registros</button></div>
+    <div class="hint">"Excel resumen" = la planilla mensual con su formato. "Excel registros" = todos los camiones y muestras del mes.</div>`:''}
   </div>`;
   $('lblNovMes').textContent = m.novedades.length ? `· ${m.novedades.length}` : '';
   $('mesNov').innerHTML = m.novedades.length ? `<table class="tbl"><tr><th>Fecha</th><th>Patente</th><th class="r">H° %</th><th>Novedad</th></tr>
@@ -921,7 +1108,7 @@ async function guardarMesUI(){
 async function generarResumenUI(){
   if(Object.keys(S.mesEd).length) await guardarMesUI();
   S.mes = await api('generarResumen', S.mes.mes); renderMes();
-  toast('Resumen mensual generado');
+  toast('PDF del resumen mensual generado');
   abrirMail('Mensual', S.mes.mes, nombreResumen(S.mes.mes));
 }
 function pegarCargill(){
@@ -1169,6 +1356,12 @@ $('novDia').onclick = e=>{
   const av = e.target.closest('[data-aviso]');
   if(av){ const r = S.dia.lecturas.find(x=>x.id===av.dataset.aviso); if(r) abrirAviso(r); return; }
   const it = e.target.closest('.item[data-id]'); if(it) abrirEdicion('lectura', it.dataset.id); };
+document.addEventListener('click', e=>{ const b=e.target.closest('[data-excel]'); if(!b || b.disabled) return; ocupado(b, ()=>exportarExcelUI(b.dataset.excel)); });
+$('descCerrar').onclick = ()=>$('ovDesc').classList.remove('on');
+$('descLink').addEventListener('click', ()=>setTimeout(()=>$('ovDesc').classList.remove('on'), 300));
+$('impArch').onchange = e=>elegirImport(e.target).catch(err=>{ $('impPrev').innerHTML=''; toast(err.message||String(err), true); });
+$('impPrev').addEventListener('change', e=>{ const c=e.target.closest('[data-imp]'); if(c){ S.imp[+c.dataset.imp].sel = c.checked; pintarImport(); } });
+$('impPrev').addEventListener('click', e=>{ const b=e.target.closest('#btnImportar'); if(b && !b.disabled) importarSel().catch(err=>toast(err.message,true)); });
 $('avCam').onchange = e=>agregarFotos(e.target);
 $('avGal').onchange = e=>agregarFotos(e.target);
 $('avFotos').onclick = e=>{ const b=e.target.closest('[data-quitar]'); if(b){ S.aviso.fotos.splice(+b.dataset.quitar,1); pintarFotos(); } };
@@ -1283,13 +1476,19 @@ const MOCK = DEMO ? (()=>{
         muestras:Mu.filter(m=>m.fecha===d.fecha&&m.estado!=='ANULADO').length, informe:Inf[d.fecha]||null})),
         lecturas: p ? X.sort((x,y)=>(y.fecha+y.hora).localeCompare(x.fecha+x.hora)).slice(0,500) : [] }; },
     generarInforme:(pin,f)=>{ const fl=armarFilas(L.filter(x=>x.fecha===f&&x.estado!=='ANULADO'));
-      const I=Inf[f]||(Inf[f]={rde:String(++rde),carpeta:'#',planilla:'#'});
+      const I=Inf[f]||(Inf[f]={rde:String(++rde),carpeta:'#',planilla:''});
       Object.assign(I,{pdf:'',hojas:Math.max(1,Math.ceil(fl.length/25)),generado:f+' '+ahoraHM(),pendiente:false});
       const p=f.split('-'); return { dia:dia(f), partes:[], nombre:`${I.rde}-Control de Humedad y Temp. Camiones - Harina de Soja ${p[2]}-${p[1]}-${p[0]}` }; },
     guardarPdf:(pin,f)=>{ Inf[f].pdf='#'; return dia(f); },
     getMes:(pin,mes)=>mesM(mes),
     guardarMes:(pin,mes,filas)=>{ filas.forEach(x=>Dias[x.fecha]=Object.assign({},x)); return mesM(mes); },
-    generarResumen:(pin,mes)=>{ Res[mes]={carpeta:'#',planilla:'#',excel:'#',pdf:'#',generado:ahoraTxt()}; return mesM(mes); },
+    generarResumen:(pin,mes)=>{ Res[mes]={carpeta:'#',planilla:'',excel:'',pdf:'#',generado:ahoraTxt()}; return mesM(mes); },
+    estadoFechas:(pin,fs)=>{ const o={}; fs.forEach(f=>{ const n=L.filter(x=>x.fecha===f).length; o[f]={lecturas:n, importadas:L.filter(x=>x.fecha===f&&String(x.id).startsWith('imp-')).length, muestras:0, rde:Inf[f]?Inf[f].rde:''}; }); return o; },
+    importarDia:(pin,d)=>{ window.__imp = (window.__imp||[]).concat([d]); let nu=0, re=0;
+      d.lecturas.forEach(x=>{ if(L.some(y=>y.id===x.id)) re++; else { nu++; add(d.fecha,x.hora,{p:x.patente,c:x.chofer},x.h,x.t,d.analista,x.id,'importado'); Object.assign(L[L.length-1],{obs:x.obs,anomalia:x.anomalia}); } });
+      Inf[d.fecha]=Object.assign(Inf[d.fecha]||{}, {rde:String(d.rde), carpeta:'#', pdf:d.pdf?'#':'', hojas:d.hojas, generado:'importado', pendiente:false});
+      renum(d.fecha); return { fecha:d.fecha, rde:d.rde, nuevas:nu, repetidas:re, errores:[] }; },
+    exportarExcel:(pin,o)=>({ nombre: o.tipo==='resumen' ? `${o.mes} Resumen.xlsx` : `Registros Humedad Camiones ${o.desde} al ${o.hasta}.xlsx`, url:'#', descarga:'#' }),
     enviarAviso:(pin,o)=>{ if(o.guardar) o.para.forEach(c=>{ if(!CORREOS.Alertas.includes(c)) CORREOS.Alertas.push(c); });
       return { enviados:o.para.length, fotos:(o.fotos||[]).length, correos:{ Diario:[...CORREOS.Diario], Mensual:[...CORREOS.Mensual], Alertas:[...CORREOS.Alertas] } }; },
     enviarCorreo:(pin,o)=>{ if(o.guardar) o.para.forEach(c=>{ if(!CORREOS[o.tipo].includes(c)) CORREOS[o.tipo].push(c); });
