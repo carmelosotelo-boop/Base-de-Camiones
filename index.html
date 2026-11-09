@@ -104,6 +104,15 @@ nav svg{width:24px;height:24px}
 .gen .hd b{font-size:15px}
 .gen .links{display:flex;gap:14px;flex-wrap:wrap;margin:6px 0 10px;font-size:14px}
 .item.click{cursor:pointer}
+.opsel{display:flex;gap:6px;max-width:760px;margin:8px auto 0;background:rgba(0,0,0,.18);padding:4px;border-radius:12px}
+.opsel button{flex:1;border:0;border-radius:9px;padding:9px 6px;font:700 14px/1 inherit;cursor:pointer;background:transparent;color:rgba(255,255,255,.75)}
+.opsel button.on{background:#fff;color:#0d6b6b;box-shadow:0 1px 4px rgba(0,0,0,.2)}
+body.desp header{background:#9a4d08}
+body.desp .opsel button.on{color:#9a4d08}
+body.desp .btn:not(.ghost):not(.danger){background:#b4580a;color:#fff}
+.opb{display:inline-block;border-radius:6px;padding:2px 7px;font-size:11px;font-weight:800;letter-spacing:.3px;background:var(--soft);color:var(--brand)}
+.opb.d{background:#fdebd9;color:#9a4d08}
+body.ancho .opsel{max-width:1180px}
 .chips.wrap{flex-wrap:wrap;overflow:visible}
 .chip.on{background:var(--bad-bg);border-color:var(--bad);color:var(--bad)}
 .anom{display:inline-block;background:var(--bad-bg);color:var(--bad);border-radius:6px;padding:1px 6px;font-size:11px;font-weight:700;margin-left:4px}
@@ -150,17 +159,18 @@ a.btn{text-decoration:none}
 <header>
   <div class="top">
     <div class="logo"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/></svg></div>
-    <div class="ttl"><b>Control de Humedad · Camiones</b><small>Tres Fronteras OTS · Harina de Soja · FO0104 / FO0167 · <b>v8</b></small></div>
+    <div class="ttl"><b>Control de Humedad · Camiones</b><small>Tres Fronteras OTS · Harina de Soja · FO0104 / FO0167 · <b id="verApp"></b></small></div>
   </div>
   <div class="datebox">
     <input type="date" id="fecha">
     <button id="btnHoy">Hoy</button>
   </div>
+  <div class="opsel" id="opsel"><button data-op="Recepción">⬇ Recepción</button><button data-op="Despacho">⬆ Despacho</button></div>
   <button class="estado" id="estado"><span class="dot"></span><span class="sp" id="estadoTxt">Conectando…</span><span id="estadoAcc"></span></button>
 </header>
 
 <main>
-  <div id="demo" class="demo" style="display:none">Vista previa con datos de ejemplo.
+  <div id="demo" class="demo" style="display:none"><span id="demoTxt"><b>Modo vista previa:</b> datos de ejemplo, no conectado a su base. No se guarda nada.</span><br>
     <label style="display:inline-flex;align-items:center;gap:6px;margin:6px 0 0;color:inherit;cursor:pointer"><input type="checkbox" id="simCorte" style="width:auto"> Simular corte de internet</label></div>
   <div id="sinCfg" class="card" style="display:none"><h2>Se necesita conexión la primera vez</h2><div class="hint">La app descarga la lista de inspectores y camiones una sola vez. Después funciona aunque no haya internet.</div><div class="hint bad" id="sinCfgErr" style="margin:8px 0"></div><button class="btn" onclick="location.reload()">Reintentar</button></div>
 
@@ -269,7 +279,7 @@ a.btn{text-decoration:none}
     </div>
     <div class="card">
       <h2>Días del mes <small>Cargill y horario se completan a mano</small></h2>
-      <div class="hint" style="margin:-4px 0 10px">R = recepción · D = despacho · F = feriado. Portátil, estufa y temperatura salen de los registros de camiones.</div>
+      <div class="hint" style="margin:-4px 0 10px">R = recepción · D = despacho · F = feriado. Portátil, estufa y temperatura salen de los registros de camiones de recepción; las columnas de despacho, de los camiones de despacho (si escribe un valor, se usa el suyo).</div>
       <label class="dest" style="border:0;padding:0 0 8px"><input type="checkbox" id="mesDesp"> Mostrar columnas de despacho</label>
       <div class="scroll" id="mesTabla"></div>
       <details>
@@ -307,6 +317,7 @@ a.btn{text-decoration:none}
     <div class="card">
       <h2>Importar informes anteriores <small>Excel FO0167 + FO0104</small></h2>
       <div class="hint" style="margin:-4px 0 10px">Elija los Excel de los informes ya hechos (ej.: <i>199-Control de Humedad y Temp. Camiones - Harina de Soja 22-10-2026.xlsx</i>). Puede elegir también los PDF con el mismo nombre para guardarlos en Drive. Importar dos veces el mismo archivo no duplica datos.</div>
+      <div class="f"><label for="impOp">Importar como</label><select id="impOp"><option>Recepción</option><option>Despacho</option></select></div>
       <label class="btn ghost" for="impArch">📂 Elegir archivos Excel / PDF</label>
       <input type="file" id="impArch" multiple accept=".xlsx,.xlsm,.xls,.pdf" hidden>
       <div id="impPrev" style="margin-top:12px"></div>
@@ -315,9 +326,9 @@ a.btn{text-decoration:none}
 </main>
 
 <nav><div class="in">
-  <button data-v="cargar" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>Cargar</button>
-  <button data-v="dia"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4M7 14h4"/></svg>Día</button>
+  <button data-v="cargar" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M2 6h11v10H2zM13 9h4.5l3.5 3.5V16h-8z"/><circle cx="6" cy="17.5" r="1.8" fill="var(--card)"/><circle cx="17" cy="17.5" r="1.8" fill="var(--card)"/></svg>Cargar</button>
   <button data-v="muestras"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3h6M10 3v6L4.5 18.5A2 2 0 0 0 6.2 21h11.6a2 2 0 0 0 1.7-2.5L14 9V3"/><path d="M7 15h10"/></svg>Muestras</button>
+  <button data-v="dia"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4M7 14h4"/></svg>Día</button>
   <button data-v="mes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Mes</button>
   <button data-v="hist"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>Historial</button>
 </div></nav>
@@ -397,7 +408,10 @@ a.btn{text-decoration:none}
    API_URL: solo para la app instalable (GitHub Pages). Pegar la URL /exec
    de la implementación de Apps Script. Dentro de Apps Script se ignora.
    ===================================================================== */
-const API_URL = 'https://script.google.com/macros/s/AKfycbw_HG0V928PLk9SZDk4pZJjoEkGFH3RTWf-Cqo3Aoe11Wp_kI2N6RxHea9vnCp5mnzRtQ/exec';
+const API_URL = '';
+
+/* VERSIÓN DE LA APP: cambiar aquí (y en sw.js) en cada actualización: V1, V2, V3… */
+const APP_VERSION = 'V1';
 
 /* ================= modo de funcionamiento ================= */
 const $ = id => document.getElementById(id);
@@ -411,7 +425,9 @@ const DB = {
   set(k, v){ try{ localStorage.setItem(PFX+k, JSON.stringify(v)); return true; }catch(e){ return false; } }
 };
 let PIN = DB.get('pin', '');
-const S = { cfg:null, fecha:'', dias:{}, cola:[], online:true, sync:false, ultimaSync:'', edit:null, almacenOk:true };
+const opNorm = x => /^\s*d/i.test(String(x||'')) ? 'Despacho' : 'Recepción';
+const KD = (f, op) => f + '|' + opNorm(op || S.op);        // clave de un informe: fecha + operación
+const S = { op: 'Recepción', cfg:null, fecha:'', dias:{}, cola:[], online:true, sync:false, ultimaSync:'', edit:null, almacenOk:true };
 
 /* ================= utilidades ================= */
 const n2 = x => (typeof x === 'number' && isFinite(x)) ? (Math.round(x*100)/100).toFixed(2).replace('.',',') : '–';
@@ -479,7 +495,7 @@ function guardarDias(){
 }
 /** Agrega una operación a la cola, actualiza la pantalla y trata de enviarla. */
 function encolar(op){
-  op.opId = uid(); op.creado = ahoraTxt();
+  op.opId = uid(); op.creado = ahoraTxt(); op.operacion = op.operacion || S.op;
   S.cola.push(op); guardarCola(); render(); sincronizar();
 }
 /** Editar o anular un registro que todavía no llegó al servidor: se corrige directamente en la cola. */
@@ -509,9 +525,9 @@ async function sincronizar(manual){
 
 async function refrescarServidor(avisar){
   try{
-    const d = await api('getDia', S.fecha);
-    S.dias[d.fecha] = d; guardarDias(); setOnline(true);
-    if(d.fecha === S.fecha) render();
+    const d = await api('getDia', S.fecha, S.op);
+    S.dias[KD(d.fecha, d.operacion)] = d; guardarDias(); setOnline(true);
+    if(d.fecha === S.fecha && opNorm(d.operacion) === S.op) render();
     if(avisar) toast('Actualizado');
   }catch(e){ if(e.red) setOnline(false); else toast(e.message, true); }
 }
@@ -531,11 +547,11 @@ function pintarEstado(){
 
 /* ================= vista del día = datos del servidor + cola ================= */
 function diaVista(fecha){
-  const base = S.dias[fecha] || { fecha, lecturas:[], muestras:[], informe:null };
+  const base = S.dias[KD(fecha)] || { fecha, lecturas:[], muestras:[], informe:null };
   const d = JSON.parse(JSON.stringify(base));
   d.muestras.forEach(m => { m.ref=fin(m.ref); m.h=fin(m.h); m.gi=fin(m.gi); m.gf=fin(m.gf); });
   d.lecturas.forEach(l => { l.h=fin(l.h); l.t=fin(l.t); });
-  const ops = S.cola.filter(o => o.fecha === fecha);
+  const ops = S.cola.filter(o => o.fecha === fecha && opNorm(o.operacion) === S.op);
   ops.forEach(op => {
     if(op.op==='lectura') d.lecturas.push({ id:op.id, fecha, hora:op.hora, patente:op.patente, chofer:op.chofer, viaje:0,
       h:op.h, t:op.t, inspector:op.inspector, obs:op.obs||'', estado:'ACTIVO', pend:true, error:op.error, reg:op.creado, anomalia:op.anomalia||'' });
@@ -576,8 +592,13 @@ function stats(L){
 
 /* ================= arranque ================= */
 async function arrancar(){
-  if(DEMO) $('demo').style.display='block';
-  S.cfg = DB.get('cfg', null); S.cola = DB.get('cola', []); S.dias = DB.get('dias', {});
+  $('verApp').textContent = APP_VERSION;
+  if(DEMO){
+    $('demo').style.display='block';
+    if(location.protocol==='https:') $('demoTxt').innerHTML = '<b>Falta configurar la conexión:</b> pegue la URL de Apps Script (/exec) en <code>API_URL</code> dentro de index.html. Ahora ve datos de ejemplo y <b>no se guarda nada</b>.';
+    document.querySelector('header .ttl b').insertAdjacentHTML('beforeend', ' <span style="background:#f6c34a;color:#3a2a00;border-radius:6px;padding:1px 6px;font-size:11px">VISTA PREVIA</span>');
+  }
+  S.cfg = DB.get('cfg', null); S.cola = DB.get('cola', []); S.dias = DB.get('dias', {}); aplicarOp(DB.get('op', 'Recepción'));
   try{
     const c = await api('init');
     if(S.cfg) c.camiones = fusionCamiones(c.camiones, S.cfg.camiones);
@@ -588,6 +609,7 @@ async function arrancar(){
     if(!S.cfg){ $('sinCfgErr').textContent = e.red ? '' : 'Detalle: ' + (e.message||String(e)); $('sinCfg').style.display='block'; document.querySelectorAll('.view').forEach(v=>v.style.display='none'); pintarEstado(); return; }
   }
   $('ovPin').classList.remove('on'); $('sinCfg').style.display='none';
+  if(S.cfg.version && S.cfg.version !== APP_VERSION && !DEMO) toast(`Atención: la app es ${APP_VERSION} y el servidor ${S.cfg.version}. Actualice Code.gs e Index.html juntos.`, true);
   document.querySelectorAll('.view').forEach(v=>v.style.display='');
   $('inspector').innerHTML = S.cfg.inspectores.map(n=>`<option>${esc(n)}</option>`).join('');
   const ins = DB.get('insp',''); if(ins && S.cfg.inspectores.includes(ins)) $('inspector').value=ins;
@@ -614,8 +636,22 @@ const etiquetaNov = r => [r.h>S.cfg.base ? 'H° sobre base' : '', r.anomalia].fi
 function llenarCamiones(){
   $('dlCamiones').innerHTML = S.cfg.camiones.map(c=>`<option value="${esc(c.p)}">${esc(c.c)}</option>`).join('');
 }
-function cambiarFecha(f){
+function cambiarFecha(f, op){
+  if(op) aplicarOp(op);
   S.fecha = f; $('fecha').value = f; render();
+  if(S.online) refrescarServidor();
+}
+/** Recepción o Despacho: toda la app (cargar, día, muestras, informe) trabaja sobre la operación elegida. */
+function aplicarOp(op){
+  S.op = opNorm(op); DB.set('op', S.op);
+  document.body.classList.toggle('desp', S.op === 'Despacho');
+  document.querySelectorAll('#opsel button').forEach(b => b.classList.toggle('on', b.dataset.op === S.op));
+  $('btnGuardar').textContent = 'Guardar lectura · ' + S.op;
+}
+function cambiarOp(op){
+  if(opNorm(op) === S.op) return;
+  aplicarOp(op); S.mes = S.mes; render();
+  toast(`Trabajando en ${S.op.toUpperCase()}`);
   if(S.online) refrescarServidor();
 }
 function render(){
@@ -742,11 +778,12 @@ function bloqueInforme(){
   const estado = !x ? '<span class="pill">No generado</span>'
     : x.pendiente ? '<span class="pill amber">Hubo cambios · regenerar</span>'
     : !x.pdf ? '<span class="pill amber">PDF pendiente</span>' : '<span class="pill good">Al día</span>';
-  const bloqueo = !L.length ? 'Sin lecturas en este día.'
+  const bloqueo = !L.length ? `Sin lecturas de ${S.op.toLowerCase()} en este día.`
     : !S.online ? 'Sin conexión: el informe se genera en Google Drive. Puede seguir cargando; genere al reconectar.'
     : pend ? `Hay ${pend} registro(s) sin sincronizar. Sincronice antes de generar.` : '';
   return `<div class="gen">
-    <div class="hd"><b style="word-break:break-word">${esc(nombreInforme(x&&x.rde))}.pdf</b>${estado}</div>
+    <div class="hd"><span class="opb ${S.op==='Despacho'?'d':''}">${S.op.toUpperCase()}</span>${estado}</div>
+    <div style="font-weight:700;word-break:break-word;margin:6px 0 2px">${esc(nombreInforme(x&&x.rde))}.pdf</div>
     <div class="hint">Pág. 1: Informe FO0167 (${nMu} muestra${nMu===1?'':'s'}) · Pág. 2${hojas>1?'–'+(hojas+1):''}: FO0104 (${filas.length} filas, ${hojas} hoja${hojas>1?'s':''})${x&&x.generado?` · generado ${esc(x.generado)}`:''}</div>
     ${!x ? '<div class="hint">Se asignará el siguiente N° R.D.E.</div>' : ''}
     ${nMu<sug && L.length ? `<div class="hint bad">Faltan muestras: ${nMu} de ${sug} sugeridas.</div>` : ''}
@@ -780,22 +817,22 @@ async function unirPdf(partes){
 }
 async function generarInforme(){
   if(S.dia.pendientes) throw new Error('Sincronice antes de generar el informe.');
-  const r = await api('generarInforme', S.fecha);
-  S.dias[S.fecha] = r.dia; render();
+  const r = await api('generarInforme', S.fecha, S.op);
+  S.dias[KD(S.fecha)] = r.dia; render();
   let lista, aviso = '';
   try{ lista = r.partes.length ? [await unirPdf(r.partes)] : []; }
   catch(e){ lista = r.partes; aviso = ' (no se pudo unir: se guardó en partes)'; }
-  const d = await api('guardarPdf', S.fecha, lista);
-  S.dias[S.fecha] = d; guardarDias(); render();
+  const d = await api('guardarPdf', S.fecha, lista, S.op);
+  S.dias[KD(S.fecha)] = d; guardarDias(); render();
   toast(`${r.nombre}.pdf generado${aviso}`, !!aviso);
   abrirMail('Diario', S.fecha, r.nombre);
 }
 
 /* ================= CORREO ================= */
 function abrirMail(tipo, clave, asunto){
-  S.mail = { tipo, clave };
+  S.mail = { tipo, clave, op:S.op };
   const def = (S.cfg.correos && S.cfg.correos[tipo]) || [];
-  $('mailTitulo').textContent = tipo==='Mensual' ? 'Enviar resumen mensual' : 'Enviar informe del día';
+  $('mailTitulo').textContent = tipo==='Mensual' ? 'Enviar resumen mensual' : `Enviar informe del día · ${S.op}`;
   $('mailAsunto').textContent = asunto || '';
   const pdf = tipo==='Mensual' ? (S.mes && S.mes.resumen && S.mes.resumen.pdf) : (S.dia.informe && S.dia.informe.pdf);
   $('mailVerPdf').style.display = pdf ? '' : 'none'; if(pdf) $('mailVerPdf').href = pdf;
@@ -810,7 +847,7 @@ async function enviarMail(){
   const para = [...$('mailDest').querySelectorAll('input:checked')].map(i=>i.value).concat(otros);
   if(!para.length) throw new Error('Elija o escriba al menos un destinatario.');
   const malo = otros.find(x=>!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(x)); if(malo) throw new Error('Correo inválido: '+malo);
-  const r = await api('enviarCorreo', { tipo:m.tipo, clave:m.clave, para, nota:$('mailNota').value.trim(), usuario:$('inspector').value, guardar:$('mailGuardar').checked && otros.length>0, excel:$('mailExcel').checked });
+  const r = await api('enviarCorreo', { tipo:m.tipo, clave:m.clave, operacion:m.op, para, nota:$('mailNota').value.trim(), usuario:$('inspector').value, guardar:$('mailGuardar').checked && otros.length>0, excel:$('mailExcel').checked });
   S.cfg.correos = r.correos; DB.set('cfg', S.cfg);
   $('ovMail').classList.remove('on');
   toast(`Enviado a ${r.enviados} destinatario(s)`);
@@ -820,7 +857,7 @@ async function enviarMail(){
 async function exportarExcelUI(tipo){
   if(!S.online) throw new Error('Exportar a Excel requiere conexión.');
   let o;
-  if(tipo==='dia') o = { tipo:'registros', desde:S.fecha, hasta:S.fecha };
+  if(tipo==='dia') o = { tipo:'registros', desde:S.fecha, hasta:S.fecha, operacion:S.op };
   else if(tipo==='mesreg'){ const m=S.mes.mes, nd=new Date(+m.slice(0,4), +m.slice(5,7), 0).getDate(); o = { tipo:'registros', desde:m+'-01', hasta:`${m}-${nd}` }; }
   else if(tipo==='resumen'){ if(Object.keys(S.mesEd).length) await guardarMesUI(); o = { tipo:'resumen', mes:S.mes.mes }; }
   else { if(!$('hDesde').value || !$('hHasta').value) throw new Error('Elija el período (desde / hasta).'); o = { tipo:'registros', desde:$('hDesde').value, hasta:$('hHasta').value }; }
@@ -947,7 +984,8 @@ async function elegirImport(input){
   }
   dias.sort((a,b)=>(a.fecha||'').localeCompare(b.fecha||''));
   let est = {};
-  try{ est = await api('estadoFechas', dias.filter(d=>d.fecha).map(d=>d.fecha)); }catch(e){ if(e.red) toast('Sin conexión: la importación requiere internet.', true); else toast(e.message, true); }
+  S.impOp = $('impOp').value;
+  try{ est = await api('estadoFechas', dias.filter(d=>d.fecha).map(d=>d.fecha), S.impOp); }catch(e){ if(e.red) toast('Sin conexión: la importación requiere internet.', true); else toast(e.message, true); }
   dias.forEach(d=>{ const e = est[d.fecha]; d.base = e; d.sel = !d.error && d.fecha && d.rde && (d.lecturas.length||d.muestras.length) && !(e && e.lecturas > e.importadas); });
   S.imp = dias; pintarImport();
 }
@@ -965,6 +1003,7 @@ function pintarImport(){
         : d.base && d.base.lecturas ? `<span class="pill amber">Ya hay ${d.base.lecturas} en la base${d.base.importadas===d.base.lecturas?' (importados)':''}</span>` : '<span class="pill">Nuevo</span>'}</td></tr>`).join('')}
     </table></div>
     <div class="hint">Los días que ya tienen registros cargados desde la app quedan sin marcar para no mezclar datos. Re-importar un archivo ya importado no duplica.</div>
+    ${DEMO?'<div class="hint bad">Modo vista previa: los datos de "Estado" son de ejemplo y la importación no se guarda. Abra la app desde el enlace /exec de Apps Script.</div>':''}
     <button class="btn" id="btnImportar" style="margin-top:10px" ${n&&S.online?'':'disabled'}>Importar ${n} día(s)</button>` : '';
 }
 async function importarSel(){
@@ -973,7 +1012,7 @@ async function importarSel(){
     $('btnImportar').innerHTML = `<span class="spin"></span>&nbsp; ${++i} de ${D.length}…`;
     try{
       const pdf = d.pdfFile ? await new Promise((r,j)=>{ const fr=new FileReader(); fr.onload=()=>r(fr.result); fr.onerror=()=>j(new Error('No se pudo leer el PDF')); fr.readAsDataURL(d.pdfFile); }) : null;
-      const r = await api('importarDia', { fecha:d.fecha, rde:d.rde, analista:d.analista, origen:d.archivo, hojas:d.hojas, pdf,
+      const r = await api('importarDia', { operacion:S.impOp, fecha:d.fecha, rde:d.rde, analista:d.analista, origen:d.archivo, hojas:d.hojas, pdf,
         lecturas:d.lecturas.map(l=>Object.assign({}, l, { t: isFinite(l.t) ? l.t : '' })), muestras:d.muestras });
       d.res = { ok:true, r }; ok++;
       if(r.errores.length) d.avisos.push(...r.errores.map(e=>'No importado: '+e));
@@ -988,7 +1027,7 @@ async function importarSel(){
 /* ================= AVISO DE NOVEDAD CON FOTOS ================= */
 function abrirAviso(r){
   if(!S.online){ toast('Sin conexión: puede enviar el aviso al reconectar, desde "Novedades del día".', true); return; }
-  S.aviso = { datos:{ fecha:r.fecha||S.fecha, hora:r.hora, patente:r.patente, chofer:r.chofer, h:r.h, t:r.t, anomalia:r.anomalia||'', obs:r.obs||'' }, fotos:[] };
+  S.aviso = { datos:{ operacion:S.op, fecha:r.fecha||S.fecha, hora:r.hora, patente:r.patente, chofer:r.chofer, h:r.h, t:r.t, anomalia:r.anomalia||'', obs:r.obs||'' }, fotos:[] };
   const d = S.aviso.datos, sobre = d.h > S.cfg.base;
   $('avDatos').innerHTML = `<div class="hd"><b>${esc(d.patente)} · ${esc(d.chofer||'')}</b><span class="pill ${sobre?'bad':''}">${n1(d.h)} %</span></div>
     <div class="hint">${d.fecha.split('-').reverse().join('/')} ${esc(d.hora)} · ${n1(d.t)} °C</div>
@@ -1041,6 +1080,7 @@ async function cargarMes(){
   try{ S.mes = await api('getMes', mesClave()); S.mesEd = {}; setOnline(true); renderMes(); }
   catch(e){ if(e.red){ setOnline(false); $('mesInfo').innerHTML = '<div class="hint bad">El resumen mensual requiere conexión.</div>'; } else throw e; }
 }
+const despEf = (d,k) => { const v = valMes(d,k); return v===''||v==null ? d[k+'Auto'] : num(v); };
 const valMes = (d,k) => (S.mesEd[d.fecha] && k in S.mesEd[d.fecha]) ? S.mesEd[d.fecha][k] : d[k];
 const nOv = v => v==='' || v==null ? '' : n2(+v);
 function setMes(f,k,v){
@@ -1055,13 +1095,14 @@ function renderMes(){
   const prom = a => { a = a.filter(v=>v!=='' && v!=null && isFinite(v)).map(Number); return a.length ? a.reduce((x,y)=>x+y,0)/a.length : NaN; };
   const act = m.dias.filter(d=>valMes(d,'recepcion'));
   const P = prom(act.map(d=>d.portatil)), E = prom(act.map(d=>d.estufa)), T = prom(act.map(d=>d.temp)), C = prom(m.dias.map(d=>{ const c=valMes(d,'cargill'); return c===''?'':num(c); }));
-  const DP = prom(m.dias.map(d=>num(valMes(d,'despPort')))), DE = prom(m.dias.map(d=>num(valMes(d,'despEst'))));
+  const DP = prom(m.dias.map(d=>despEf(d,'despPort'))), DE = prom(m.dias.map(d=>despEf(d,'despEst')));
+  if(!S.mesDespVisto && m.dias.some(d=>d.despViajes)){ $('mesDesp').checked = true; S.mesDespVisto = true; return renderMes(); }
   const inp = (d,k,cls,ph) => { const v = valMes(d,k); const ch = S.mesEd[d.fecha] && k in S.mesEd[d.fecha];
     return `<input class="${cls}${ch?' cambio':''}" data-f="${d.fecha}" data-k="${k}" value="${esc(cls==='mi'&&v!==''&&v!=null&&!ch?n2(+v):v)}" placeholder="${esc(ph||'')}" inputmode="${cls==='mi'?'decimal':'text'}">`; };
   const tg = (d,k,t,c) => `<button class="tog ${c||''} ${valMes(d,k)?'on':''}" data-f="${d.fecha}" data-k="${k}">${t}</button>`;
   const dif = (a,b) => (a===''||b===''||a==null||b==null||!isFinite(a)||!isFinite(b)) ? '' : n2(a-b);
-  $('mesTabla').innerHTML = `<table class="mt"><tr><th>Día</th><th>Op.</th><th>Horario</th><th>Cam.</th><th>Portátil %</th><th>Estufa %</th><th>Dif.</th><th>Temp °C</th><th>Cargill %</th><th>Dif.</th>${desp?'<th>Desp. portátil</th><th>Desp. estufa</th><th>Dif.</th>':''}</tr>
-    ${m.dias.map(d=>{ const c = valMes(d,'cargill'), cn = c===''?'':num(c), dp=num(valMes(d,'despPort')), de=num(valMes(d,'despEst'));
+  $('mesTabla').innerHTML = `<table class="mt"><tr><th>Día</th><th>Op.</th><th>Horario</th><th>Cam.</th><th>Portátil %</th><th>Estufa %</th><th>Dif.</th><th>Temp °C</th><th>Cargill %</th><th>Dif.</th>${desp?'<th>Cam. desp.</th><th>Desp. portátil</th><th>Desp. estufa</th><th>Dif.</th>':''}</tr>
+    ${m.dias.map(d=>{ const c = valMes(d,'cargill'), cn = c===''?'':num(c), dp=despEf(d,'despPort'), de=despEf(d,'despEst');
       return `<tr class="${d.dow===0?'dom':''}">
       <td class="l">${['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'][d.dow]} ${d.dia}</td>
       <td>${tg(d,'recepcion','R')} ${tg(d,'despacho','D')} ${tg(d,'feriado','F','fer')}</td>
@@ -1069,9 +1110,9 @@ function renderMes(){
       <td>${d.camiones||''}${d.alertas?` <span class="anom">${d.alertas}</span>`:''}</td>
       <td>${nOv(d.portatil)}</td><td>${nOv(d.estufa)}</td><td><b>${dif(d.estufa,d.portatil)}</b></td><td>${nOv(d.temp)}</td>
       <td>${inp(d,'cargill','mi')}</td><td><b data-dc="${d.fecha}">${dif(cn, d.estufa)}</b></td>
-      ${desp?`<td>${inp(d,'despPort','mi')}</td><td>${inp(d,'despEst','mi')}</td><td><b data-dd="${d.fecha}">${dif(de,dp)}</b></td>`:''}</tr>`; }).join('')}
+      ${desp?`<td>${d.despCamiones||''}</td><td>${inp(d,'despPort','mi', nOv(d.despPortAuto))}</td><td>${inp(d,'despEst','mi', nOv(d.despEstAuto))}</td><td><b data-dd="${d.fecha}">${dif(de,dp)}</b></td>`:''}</tr>`; }).join('')}
     <tr class="tot"><td class="l">Promedio</td><td>${act.length} días</td><td></td><td>${act.reduce((s,d)=>s+d.camiones,0)}</td>
-      <td>${n2(P)}</td><td>${n2(E)}</td><td>${n2(E-P)}</td><td>${n2(T)}</td><td>${n2(C)}</td><td>${n2(C-E)}</td>${desp?`<td>${n2(DP)}</td><td>${n2(DE)}</td><td>${n2(DE-DP)}</td>`:''}</tr></table>`;
+      <td>${n2(P)}</td><td>${n2(E)}</td><td>${n2(E-P)}</td><td>${n2(T)}</td><td>${n2(C)}</td><td>${n2(C-E)}</td>${desp?`<td>${m.dias.reduce((s,d)=>s+(d.despCamiones||0),0)}</td><td>${n2(DP)}</td><td>${n2(DE)}</td><td>${n2(DE-DP)}</td>`:''}</tr></table>`;
   const r = m.resumen;
   $('mesInfo').innerHTML = `<div class="gen">
     <div class="hd"><b style="word-break:break-word">${esc(nombreResumen(m.mes))}</b>${r?'<span class="pill good">Generado</span>':'<span class="pill">No generado</span>'}</div>
@@ -1087,7 +1128,7 @@ function renderMes(){
   $('lblNovMes').textContent = m.novedades.length ? `· ${m.novedades.length}` : '';
   $('mesNov').innerHTML = m.novedades.length ? `<table class="tbl"><tr><th>Fecha</th><th>Patente</th><th class="r">H° %</th><th>Novedad</th></tr>
     ${m.novedades.map(x=>`<tr class="click" data-f="${x.fecha}"><td>${x.fecha.slice(8)}/${x.fecha.slice(5,7)} ${esc(x.hora)}</td><td><b>${esc(x.patente)}</b></td>
-      <td class="r"><span class="pill ${x.sobreBase?'bad':''}">${n1(+x.h)}</span></td><td>${esc([x.sobreBase?'H° sobre base':'', x.anomalia, x.obs].filter(Boolean).join(' · '))}</td></tr>`).join('')}</table>`
+      <td class="r"><span class="pill ${x.sobreBase?'bad':''}">${n1(+x.h)}</span></td><td>${x.operacion==='Despacho'?'<span class="opb d">DESP</span> ':''}${esc([x.sobreBase?'H° sobre base':'', x.anomalia, x.obs].filter(Boolean).join(' · '))}</td></tr>`).join('')}</table>`
     : '<div class="hint">Sin novedades en el mes.</div>';
   $('btnMesGuardar').disabled = !cambios;
 }
@@ -1287,9 +1328,9 @@ async function buscar(){
   catch(e){
     if(!e.red) throw e;
     setOnline(false);
-    const dias = Object.keys(S.dias).sort().reverse();
+    const dias = Object.keys(S.dias).filter(k=>k.includes('|')).sort().reverse();
     $('resHist').innerHTML = `<div class="card"><h2>Sin conexión</h2><div class="hint">El historial completo se consulta en el servidor. Días guardados en este equipo:</div>
-      <table class="tbl">${dias.map(f=>`<tr class="click" data-f="${f}"><td>${fLarga(f)}</td><td class="r">${S.dias[f].lecturas.filter(l=>l.estado!=='ANULADO').length} viajes</td></tr>`).join('')}</table></div>`;
+      <table class="tbl">${dias.map(k=>{ const [f,o]=k.split('|'); return `<tr class="click" data-f="${f}" data-op="${o}"><td>${fLarga(f)}</td><td><span class="opb ${o==='Despacho'?'d':''}">${o==='Despacho'?'DESP':'RECEP'}</span></td><td class="r">${S.dias[k].lecturas.filter(l=>l.estado!=='ANULADO').length} viajes</td></tr>`; }).join('')}</table></div>`;
     return;
   }
   const D = r.dias;
@@ -1300,8 +1341,8 @@ async function buscar(){
     <div class="stat"><b>${tv}</b><span>Viajes</span></div>
     <div class="stat ${ta?'bad':''}"><b>${n2(hp)}</b><span>H° prom. · ${ta} alertas</span></div></div>`;
   html += `<div class="card"><h2>Por día <small>tocar para abrir</small></h2>${D.length?`<table class="tbl">
-    <tr><th>Fecha</th><th class="r">Cam.</th><th class="r">Viajes</th><th class="r">H° %</th><th class="r">Mtras</th><th>R.D.E.</th></tr>
-    ${D.map(d=>`<tr class="click" data-f="${d.fecha}"><td>${fLarga(d.fecha)}</td><td class="r">${d.camiones}</td><td class="r">${d.viajes}</td>
+    <tr><th>Fecha</th><th>Op.</th><th class="r">Cam.</th><th class="r">Viajes</th><th class="r">H° %</th><th class="r">Mtras</th><th>R.D.E.</th></tr>
+    ${D.map(d=>`<tr class="click" data-f="${d.fecha}" data-op="${esc(d.operacion||'Recepción')}"><td>${fLarga(d.fecha)}</td><td><span class="opb ${d.operacion==='Despacho'?'d':''}">${d.operacion==='Despacho'?'DESP':'RECEP'}</span></td><td class="r">${d.camiones}</td><td class="r">${d.viajes}</td>
       <td class="r"><span class="pill ${d.alertas?'bad':''}">${n2(d.hProm)}</span></td><td class="r">${d.muestras}</td>
       <td>${d.informe&&d.informe.rde?`<a href="${esc(d.informe.pdf||d.informe.carpeta)}" target="_blank" onclick="event.stopPropagation()">${esc(d.informe.rde)}</a>`:'<span class="hint">—</span>'}</td></tr>`).join('')}
     </table>`:'<div class="empty">Sin resultados.</div>'}</div>`;
@@ -1349,7 +1390,8 @@ $('btnMuestra').onclick = seguro(guardarMuestra);
 $('listaMuestras').onclick = e=>{ const b=e.target.closest('tr[data-mid]'); if(b && b.dataset.mid) abrirEdicion('muestra', b.dataset.mid); };
 document.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{ rango(b.dataset.r); $('btnBuscar').click(); });
 $('btnBuscar').onclick = ()=>ocupado($('btnBuscar'), buscar);
-$('resHist').onclick = e=>{ const tr=e.target.closest('tr[data-f]'); if(!tr) return; cambiarFecha(tr.dataset.f); ir('dia'); };
+$('resHist').onclick = e=>{ const tr=e.target.closest('tr[data-f]'); if(!tr) return; cambiarFecha(tr.dataset.f, tr.dataset.op); ir('dia'); };
+$('opsel').onclick = e=>{ const b=e.target.closest('[data-op]'); if(b) cambiarOp(b.dataset.op); };
 $('anoms').onclick = e=>{ const b=e.target.closest('.chip'); if(b) b.classList.toggle('on'); };
 $('edCampos').addEventListener('click', e=>{ const b=e.target.closest('#e_anoms .chip'); if(b) b.classList.toggle('on'); });
 $('novDia').onclick = e=>{
@@ -1383,13 +1425,13 @@ $('mesTabla').addEventListener('input', e=>{ const i=e.target.closest('input[dat
   const df = (a,b) => (a===''||b===''||!isFinite(a)||!isFinite(b)) ? '' : n2(a-b), nv = k => { const v=valMes(d,k); return v===''?'':num(v); };
   const c1 = document.querySelector(`[data-dc="${f}"]`), c2 = document.querySelector(`[data-dd="${f}"]`);
   if(c1) c1.textContent = df(nv('cargill'), d.estufa);
-  if(c2) c2.textContent = df(nv('despEst'), nv('despPort'));
+  if(c2) c2.textContent = df(despEf(d,'despEst'), despEf(d,'despPort'));
   $('btnMesGuardar').disabled = !Object.keys(S.mesEd).length; });
 $('mesTabla').addEventListener('click', e=>{ const b=e.target.closest('.tog'); if(!b) return; const d=S.mes.dias.find(x=>x.fecha===b.dataset.f); setMes(b.dataset.f, b.dataset.k, !valMes(d, b.dataset.k)); renderMes(); });
 $('btnMesGuardar').onclick = ()=>ocupado($('btnMesGuardar'), guardarMesUI);
 $('btnPegar').onclick = pegarCargill;
 $('mesInfo').addEventListener('click', e=>{ const b=e.target.closest('#btnResumen'); if(b && !b.disabled) ocupado(b, generarResumenUI); });
-$('mesNov').onclick = e=>{ const tr=e.target.closest('tr[data-f]'); if(tr){ cambiarFecha(tr.dataset.f); ir('dia'); } };
+$('mesNov').onclick = e=>{ const tr=e.target.closest('tr[data-f]'); if(tr){ const x = S.mes.novedades.find(n=>n.fecha===tr.dataset.f); cambiarFecha(tr.dataset.f, x && x.operacion); ir('dia'); } };
 $('btnPin').onclick = ()=>{ PIN=$('pinIn').value; DB.set('pin',PIN); arrancar(); };
 $('estado').onclick = abrirCola;
 $('btnSync').onclick = ()=>ocupado($('btnSync'), async()=>{ await sincronizar(true); abrirCola(); });
@@ -1422,72 +1464,78 @@ const MOCK = DEMO ? (()=>{
   const flota=Array.from({length:120},(_,i)=>{ const p=Array.from({length:3},()=>letras[Math.floor(rnd()*letras.length)]).join('')+String(100+Math.floor(rnd()*899)); return {p, c:nombres[i%nombres.length]}; });
   flota[0]={p:'CBE977',c:'MIGUEL BARBOSA'}; flota[1]={p:'MEES017',c:'ADINEI VIEIRA'};
   const hm = m => pad(Math.floor(m/60))+':'+pad(m%60);
-  const add=(f,hora,c,h,t,insp,id,reg)=>{ L.push({id:id||String(idc++),fecha:f,hora,patente:c.p,chofer:c.c,viaje:0,h,t,inspector:insp,obs:'',estado:'ACTIVO',reg:reg||(f+' 00:00:00')}); cam[c.p]=c.c; };
+  const add=(f,hora,c,h,t,insp,id,reg,op)=>{ L.push({id:id||String(idc++),fecha:f,hora,patente:c.p,chofer:c.c,viaje:0,h,t,inspector:insp,obs:'',estado:'ACTIVO',reg:reg||(f+' 00:00:00'),operacion:opNorm(op)}); cam[c.p]=c.c; };
+  const IK = (f,op) => f+'|'+opNorm(op);
   for(let k=30;k>=0;k--){
     const d=new Date(); d.setDate(d.getDate()-k); if(d.getDay()===0) continue; const f=isoLocal(d);
     const nCam = k===0 ? 34 : 20+Math.floor(rnd()*70); const ev=[];
     for(let i=0;i<nCam;i++){ const c=flota[i]; const viajes = rnd()<.12 ? 6+Math.floor(rnd()*2) : 1+Math.floor(rnd()*4);
       let m=360+Math.floor(rnd()*240); for(let v=0;v<viajes;v++){ ev.push({m,c}); m+=55+Math.floor(rnd()*60); } }
     ev.sort((a,b)=>a.m-b.m).forEach(e=>{ if(e.m<1200) add(f,hm(e.m),e.c,Math.round((10.4+rnd()*2.25)*10)/10,Math.round((21+rnd()*3.5)*10)/10, rnd()<.5?'Fatima Rojas':'Inspector 2'); });
-    if(k>0 && k<25){ Inf[f]={rde:String(rde-k),carpeta:'#',planilla:'#',pdf:'#',hojas:Math.ceil(nCam/25),generado:f+' 18:40',pendiente:false};
-      const ps=[...new Set(L.filter(x=>x.fecha===f).map(x=>x.patente))];
+    if(k<6) for(let i=0;i<4;i++) add(f, hm(600+i*70), flota[100+i], Math.round((10.8+rnd()*1.2)*10)/10, Math.round((22+rnd()*2)*10)/10, 'Inspector 2', null, null, 'Despacho');
+    if(k>0 && k<25){ Inf[IK(f)]={rde:String(rde-k),carpeta:'#',planilla:'#',pdf:'#',hojas:Math.ceil(nCam/25),generado:f+' 18:40',pendiente:false};
+      const ps=[...new Set(L.filter(x=>x.fecha===f&&x.operacion==='Recepción').map(x=>x.patente))];
       for(let s=0;s<Math.ceil(ps.length/10);s++){ const p=ps[s*10]; const r=L.find(x=>x.fecha===f&&x.patente===p);
-        Mu.push({id:String(idc++),fecha:f,n:s+1,patente:p,ref:r.h,h:Math.round((r.h+(rnd()-.4)*.6)*100)/100,gi:6.81,gf:6.04,tiempo:'0:27',inspector:'Fatima Rojas',obs:'',estado:'ACTIVO'}); } }
+        Mu.push({id:String(idc++),fecha:f,n:s+1,patente:p,ref:r.h,h:Math.round((r.h+(rnd()-.4)*.6)*100)/100,gi:6.81,gf:6.04,tiempo:'0:27',inspector:'Fatima Rojas',obs:'',estado:'ACTIVO',operacion:'Recepción'}); } }
   }
   L.filter((x,i)=>i%41===7).forEach((x,i)=>{ x.anomalia = ['Insecto vivo','Punto negro','Olor extraño'][i%3]; });
   const mesM = mes => {
     const Y=+mes.slice(0,4), M=+mes.slice(5,7), nd=new Date(Y,M,0).getDate(), hoy=isoLocal(new Date());
     const pr = a => { a=a.filter(v=>typeof v==='number'&&isFinite(v)); return a.length ? Math.round(a.reduce((x,y)=>x+y,0)/a.length*100)/100 : ''; };
     const dias=[];
-    for(let d=1; d<=nd; d++){ const f=`${mes}-${String(d).padStart(2,'0')}`, l=L.filter(x=>x.fecha===f&&x.estado!=='ANULADO'), m=Mu.filter(x=>x.fecha===f&&x.estado!=='ANULADO'), x=Dias[f]||{}, dow=new Date(Y,M-1,d).getDay();
+    for(let d=1; d<=nd; d++){ const f=`${mes}-${String(d).padStart(2,'0')}`, x=Dias[f]||{}, dow=new Date(Y,M-1,d).getDay();
+      const l=L.filter(x=>x.fecha===f&&x.estado!=='ANULADO'&&x.operacion==='Recepción'), m=Mu.filter(x=>x.fecha===f&&x.estado!=='ANULADO'&&x.operacion==='Recepción');
+      const ld=L.filter(x=>x.fecha===f&&x.estado!=='ANULADO'&&x.operacion==='Despacho'), md=Mu.filter(x=>x.fecha===f&&x.estado!=='ANULADO'&&x.operacion==='Despacho');
       const hs=l.map(r=>r.hora).sort(), span=hs.length?((+hs[hs.length-1].slice(0,2)*60+ +hs[hs.length-1].slice(3))-(+hs[0].slice(0,2)*60+ +hs[0].slice(3)))/60:0;
       const ci = f.slice(8)<'20' && l.length ? Math.round((pr(m.map(r=>r.h))||11.8)*100+ (d%5-2)*7)/100 : '';
       dias.push({ fecha:f, dia:d, dow, camiones:new Set(l.map(r=>r.patente)).size, viajes:l.length, muestras:m.length,
         portatil:pr(m.map(r=>r.ref)), estufa:pr(m.map(r=>r.h)), temp:pr(l.map(r=>r.t)), alertas:l.filter(r=>r.h>12.5||r.anomalia).length,
         sugerido: hs.length ? (span>=20?'24 hs':Math.max(1,Math.round(span))+' hs') : (f<hoy&&dow!==0?'Sin Movimiento':''),
-        recepcion: 'recepcion' in x ? !!x.recepcion : l.length>0, despacho:!!x.despacho, feriado:!!x.feriado, horario:x.horario||'',
+        recepcion: 'recepcion' in x ? !!x.recepcion : l.length>0, despacho:!!x.despacho||ld.length>0, feriado:!!x.feriado, horario:x.horario||'',
+        despCamiones:new Set(ld.map(r=>r.patente)).size, despViajes:ld.length, despPortAuto: md.length ? pr(md.map(r=>r.ref)) : pr(ld.map(r=>r.h)), despEstAuto: pr(md.map(r=>r.h)),
         cargill: 'cargill' in x ? x.cargill : ci, despPort:x.despPort??'', despEst:x.despEst??'', obs:x.obs||'' }); }
     const novedades=L.filter(x=>x.fecha.slice(0,7)===mes&&x.estado!=='ANULADO'&&(x.h>12.5||x.anomalia)).sort((a,b)=>(a.fecha+a.hora).localeCompare(b.fecha+b.hora))
-      .map(x=>({fecha:x.fecha,hora:x.hora,patente:x.patente,chofer:x.chofer,h:x.h,t:x.t,anomalia:x.anomalia||'',obs:x.obs,sobreBase:x.h>12.5}));
+      .map(x=>({fecha:x.fecha,hora:x.hora,patente:x.patente,chofer:x.chofer,h:x.h,t:x.t,anomalia:x.anomalia||'',obs:x.obs,sobreBase:x.h>12.5,operacion:x.operacion}));
     return { mes, base:12.5, portatil:'muestras', dias, novedades, resumen:Res[mes]||null };
   };
-  const renum = f => { const c={}; L.filter(x=>x.fecha===f&&x.estado!=='ANULADO').sort((a,b)=>a.hora.localeCompare(b.hora)).forEach(x=>{ x.viaje=c[x.patente]=(c[x.patente]||0)+1; }); };
-  [...new Set(L.map(x=>x.fecha))].forEach(renum);
-  const dia = f => ({ fecha:f, lecturas:L.filter(x=>x.fecha===f).sort((a,b)=>a.hora.localeCompare(b.hora)),
-    muestras:Mu.filter(x=>x.fecha===f).sort((a,b)=>a.n-b.n), informe:Inf[f]||null });
+  const renum = (f,op) => { const c={}; L.filter(x=>x.fecha===f&&x.operacion===opNorm(op)&&x.estado!=='ANULADO').sort((a,b)=>a.hora.localeCompare(b.hora)).forEach(x=>{ x.viaje=c[x.patente]=(c[x.patente]||0)+1; }); };
+  [...new Set(L.map(x=>IK(x.fecha,x.operacion)))].forEach(k=>renum(...k.split('|')));
+  const dia = (f,op) => ({ fecha:f, operacion:opNorm(op), lecturas:L.filter(x=>x.fecha===f&&x.operacion===opNorm(op)).sort((a,b)=>a.hora.localeCompare(b.hora)),
+    muestras:Mu.filter(x=>x.fecha===f&&x.operacion===opNorm(op)).sort((a,b)=>a.n-b.n), informe:Inf[IK(f,op)]||null });
   return {
-    init:()=>({ hoy:isoLocal(new Date()), base:12.5, porMuestra:10, filasHoja:25, viajesFila:5, maxMuestras:15,
+    init:()=>({ version:APP_VERSION, hoy:isoLocal(new Date()), base:12.5, porMuestra:10, filasHoja:25, viajesFila:5, maxMuestras:15,
       anomalias:ANOM_DEF, correos:{ Diario:[...CORREOS.Diario], Mensual:[...CORREOS.Mensual], Alertas:[...CORREOS.Alertas] },
       inspectores:['Fatima Rojas','Inspector 2'], camiones:Object.keys(cam).map(p=>({p,c:cam[p]})) }),
-    getDia:(pin,f)=>dia(f),
+    getDia:(pin,f,op)=>dia(f,op),
     sync:(pin,ops)=>({ servidor:'', resultados: ops.map(op=>{
       try{
-        if(op.op==='lectura'){ if(!L.some(x=>x.id===op.id)){ add(op.fecha,op.hora,{p:op.patente,c:op.chofer},op.h,op.t,op.inspector,op.id,op.creado); Object.assign(L[L.length-1],{obs:op.obs||'',anomalia:op.anomalia||''}); } }
-        else if(op.op==='muestra'){ if(!Mu.some(x=>x.id===op.id)){ const n=Mu.filter(x=>x.fecha===op.fecha).length+1;
-          Mu.push({id:op.id,fecha:op.fecha,n,patente:op.patente,ref:op.ref,h:op.h,gi:op.gi,gf:op.gf,tiempo:op.tiempo,inspector:op.inspector,obs:'',estado:'ACTIVO'}); } }
+        let o = opNorm(op.operacion);
+        if(op.op==='lectura'){ if(!L.some(x=>x.id===op.id)){ add(op.fecha,op.hora,{p:op.patente,c:op.chofer},op.h,op.t,op.inspector,op.id,op.creado,o); Object.assign(L[L.length-1],{obs:op.obs||'',anomalia:op.anomalia||''}); } }
+        else if(op.op==='muestra'){ if(!Mu.some(x=>x.id===op.id)){ const n=Mu.filter(x=>x.fecha===op.fecha&&x.operacion===o).length+1;
+          Mu.push({id:op.id,fecha:op.fecha,n,patente:op.patente,ref:op.ref,h:op.h,gi:op.gi,gf:op.gf,tiempo:op.tiempo,inspector:op.inspector,obs:'',estado:'ACTIVO',operacion:o}); } }
         else { const r=(op.tipo==='muestra'?Mu:L).find(x=>x.id===op.id); if(!r) throw new Error('Registro no encontrado.');
-          if(op.op==='anular') r.estado='ANULADO'; else Object.assign(r, op.datos); }
-        renum(op.fecha); if(Inf[op.fecha]) Inf[op.fecha].pendiente=true;
+          o = r.operacion; if(op.op==='anular') r.estado='ANULADO'; else Object.assign(r, op.datos); }
+        renum(op.fecha, o); if(Inf[IK(op.fecha,o)]) Inf[IK(op.fecha,o)].pendiente=true;
         return {opId:op.opId, ok:true};
       }catch(e){ return {opId:op.opId, ok:false, error:e.message}; } }) }),
     getHistorial:(pin,a,b,p)=>{ p=pat(p); const X=L.filter(x=>x.estado!=='ANULADO'&&x.fecha>=a&&x.fecha<=b&&(!p||x.patente.includes(p)));
-      const g={}; X.forEach(x=>{ const d=g[x.fecha]||(g[x.fecha]={fecha:x.fecha,s:new Set(),viajes:0,sh:0,st:0,alertas:0}); d.s.add(x.patente); d.viajes++; d.sh+=x.h; d.st+=x.t; if(x.h>12.5) d.alertas++; });
-      return { dias:Object.values(g).sort((x,y)=>y.fecha.localeCompare(x.fecha)).map(d=>({fecha:d.fecha,camiones:d.s.size,viajes:d.viajes,hProm:d.sh/d.viajes,tProm:d.st/d.viajes,alertas:d.alertas,
-        muestras:Mu.filter(m=>m.fecha===d.fecha&&m.estado!=='ANULADO').length, informe:Inf[d.fecha]||null})),
+      const g={}; X.forEach(x=>{ const k=IK(x.fecha,x.operacion), d=g[k]||(g[k]={fecha:x.fecha,operacion:x.operacion,s:new Set(),viajes:0,sh:0,st:0,alertas:0}); d.s.add(x.patente); d.viajes++; d.sh+=x.h; d.st+=x.t; if(x.h>12.5) d.alertas++; });
+      return { dias:Object.values(g).sort((x,y)=>(y.fecha+y.operacion).localeCompare(x.fecha+x.operacion)).map(d=>({fecha:d.fecha,operacion:d.operacion,camiones:d.s.size,viajes:d.viajes,hProm:d.sh/d.viajes,tProm:d.st/d.viajes,alertas:d.alertas,
+        muestras:Mu.filter(m=>m.fecha===d.fecha&&m.operacion===d.operacion&&m.estado!=='ANULADO').length, informe:Inf[IK(d.fecha,d.operacion)]||null})),
         lecturas: p ? X.sort((x,y)=>(y.fecha+y.hora).localeCompare(x.fecha+x.hora)).slice(0,500) : [] }; },
-    generarInforme:(pin,f)=>{ const fl=armarFilas(L.filter(x=>x.fecha===f&&x.estado!=='ANULADO'));
-      const I=Inf[f]||(Inf[f]={rde:String(++rde),carpeta:'#',planilla:''});
+    generarInforme:(pin,f,op)=>{ const fl=armarFilas(L.filter(x=>x.fecha===f&&x.operacion===opNorm(op)&&x.estado!=='ANULADO'));
+      const I=Inf[IK(f,op)]||(Inf[IK(f,op)]={rde:String(++rde),carpeta:'#',planilla:''});
       Object.assign(I,{pdf:'',hojas:Math.max(1,Math.ceil(fl.length/25)),generado:f+' '+ahoraHM(),pendiente:false});
-      const p=f.split('-'); return { dia:dia(f), partes:[], nombre:`${I.rde}-Control de Humedad y Temp. Camiones - Harina de Soja ${p[2]}-${p[1]}-${p[0]}` }; },
-    guardarPdf:(pin,f)=>{ Inf[f].pdf='#'; return dia(f); },
+      const p=f.split('-'); return { dia:dia(f,op), partes:[], nombre:`${I.rde}-Control de Humedad y Temp. Camiones - Harina de Soja ${p[2]}-${p[1]}-${p[0]}` }; },
+    guardarPdf:(pin,f,l,op)=>{ Inf[IK(f,op)].pdf='#'; return dia(f,op); },
     getMes:(pin,mes)=>mesM(mes),
     guardarMes:(pin,mes,filas)=>{ filas.forEach(x=>Dias[x.fecha]=Object.assign({},x)); return mesM(mes); },
     generarResumen:(pin,mes)=>{ Res[mes]={carpeta:'#',planilla:'',excel:'',pdf:'#',generado:ahoraTxt()}; return mesM(mes); },
-    estadoFechas:(pin,fs)=>{ const o={}; fs.forEach(f=>{ const n=L.filter(x=>x.fecha===f).length; o[f]={lecturas:n, importadas:L.filter(x=>x.fecha===f&&String(x.id).startsWith('imp-')).length, muestras:0, rde:Inf[f]?Inf[f].rde:''}; }); return o; },
+    estadoFechas:(pin,fs,op)=>{ const o={}; fs.forEach(f=>{ const X=L.filter(x=>x.fecha===f&&x.operacion===opNorm(op)); o[f]={lecturas:X.length, importadas:X.filter(x=>String(x.id).startsWith('imp-')).length, muestras:0, rde:Inf[IK(f,op)]?Inf[IK(f,op)].rde:''}; }); return o; },
     importarDia:(pin,d)=>{ window.__imp = (window.__imp||[]).concat([d]); let nu=0, re=0;
-      d.lecturas.forEach(x=>{ if(L.some(y=>y.id===x.id)) re++; else { nu++; add(d.fecha,x.hora,{p:x.patente,c:x.chofer},x.h,x.t,d.analista,x.id,'importado'); Object.assign(L[L.length-1],{obs:x.obs,anomalia:x.anomalia}); } });
-      Inf[d.fecha]=Object.assign(Inf[d.fecha]||{}, {rde:String(d.rde), carpeta:'#', pdf:d.pdf?'#':'', hojas:d.hojas, generado:'importado', pendiente:false});
-      renum(d.fecha); return { fecha:d.fecha, rde:d.rde, nuevas:nu, repetidas:re, errores:[] }; },
+      d.lecturas.forEach(x=>{ if(L.some(y=>y.id===x.id)) re++; else { nu++; add(d.fecha,x.hora,{p:x.patente,c:x.chofer},x.h,x.t,d.analista,x.id,'importado',d.operacion); Object.assign(L[L.length-1],{obs:x.obs,anomalia:x.anomalia}); } });
+      Inf[IK(d.fecha,d.operacion)]=Object.assign(Inf[IK(d.fecha,d.operacion)]||{}, {rde:String(d.rde), carpeta:'#', pdf:d.pdf?'#':'', hojas:d.hojas, generado:'importado', pendiente:false});
+      renum(d.fecha, d.operacion); return { fecha:d.fecha, rde:d.rde, nuevas:nu, repetidas:re, errores:[] }; },
     exportarExcel:(pin,o)=>({ nombre: o.tipo==='resumen' ? `${o.mes} Resumen.xlsx` : `Registros Humedad Camiones ${o.desde} al ${o.hasta}.xlsx`, url:'#', descarga:'#' }),
     enviarAviso:(pin,o)=>{ if(o.guardar) o.para.forEach(c=>{ if(!CORREOS.Alertas.includes(c)) CORREOS.Alertas.push(c); });
       return { enviados:o.para.length, fotos:(o.fotos||[]).length, correos:{ Diario:[...CORREOS.Diario], Mensual:[...CORREOS.Mensual], Alertas:[...CORREOS.Alertas] } }; },
